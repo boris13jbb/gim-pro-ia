@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual de Facturación Electrónica SRI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+            margin: 0;
+            padding: 40px;
+            background: #ffffff;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #ef4444;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #111827;
+            font-size: 2.5rem;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            color: #ef4444;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 10px;
+        }
+        .card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        ul, ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .highlight {
+            background: #fef2f2;
+            color: #b91c1c;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .step-num {
+            background: #ef4444;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+        .step-content h4 {
+            margin: 0 0 5px 0;
+            color: #111827;
+        }
+        .step-content p {
+            margin: 0;
+            color: #4b5563;
+            font-size: 0.95rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Manual de Facturación Electrónica SRI</h1>
+        <p>Integración directa para el sistema Iron Gym - Ecuador</p>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">1. Tecnologías de Integración</h2>
+        <div class="card">
+            <p>La integración con el Servicio de Rentas Internas (SRI) se desarrolló sin depender de APIs de terceros (facturación directa), utilizando las siguientes tecnologías:</p>
+            <ul>
+                <li><strong>Protocolo SOAP (cURL PHP):</strong> Para consumir los WebServices oficiales del SRI (Recepción y Autorización de comprobantes).</li>
+                <li><strong>Firma Digital XAdES-BES:</strong> Utilizando librerías criptográficas integradas en PHP (OpenSSL y DOMDocument) para firmar digitalmente los documentos XML cumpliendo el estándar exigido por Ecuador.</li>
+                <li><strong>Arquitectura MVC:</strong> Integrado directamente en el núcleo del sistema Gym, separando la lógica tributaria (<code>FacturadorSri.php</code>), el control de las peticiones HTTP y el almacenamiento en bases de datos relacionales MySQL.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">2. Funcionalidades en el Sistema</h2>
+        <div class="card">
+            <p>El sistema abarca el ciclo de vida completo de un comprobante electrónico:</p>
+            <ul>
+                <li><strong>Emisión Automática:</strong> Generación de <span class="highlight">Facturas Electrónicas (01)</span> desde el módulo de Suscripciones y el Punto de Venta (POS).</li>
+                <li><strong>Notas de Crédito:</strong> Generación de <span class="highlight">Notas de Crédito (04)</span> para devoluciones totales o anulaciones, referenciando facturas previamente emitidas.</li>
+                <li><strong>Gestión de Estados:</strong> Monitoreo en tiempo real del estado SRI (<span class="badge">Autorizado</span>, Rechazado, Devuelta, Procesamiento). Incluye reintentos automáticos para comprobantes pendientes por errores de red.</li>
+                <li><strong>Generación RIDE (PDF):</strong> Construcción de la representación impresa del XML (RIDE) de forma automática con opción de impresión en ticket o tamaño A4.</li>
+                <li><strong>Notificaciones:</strong> Envío del XML y el RIDE en formato PDF por correo electrónico directamente al cliente o socio.</li>
+                <li><strong>Trazabilidad y Auditoría:</strong> Registro técnico de todos los XML enviados (Request) y recibidos (Response) en el módulo de Logs Técnicos SRI.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">3. Requisitos para Operar en Producción</h2>
+        <p>El dueño de la empresa (Gimnasio) debe proporcionar o gestionar los siguientes datos legales para emitir comprobantes de validez tributaria:</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Requisito / Dato</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>RUC Activo</strong></td>
+                    <td>Registro Único de Contribuyentes (13 dígitos) con estado activo en el SRI.</td>
+                </tr>
+                <tr>
+                    <td><strong>Firma Electrónica (.p12)</strong></td>
+                    <td>Archivo de firma electrónica (formato <code>.p12</code> o <code>.pfx</code>). Se solicita ante entidades certificadoras (Security Data, Registro Civil, BCE, etc.) y se descarga como archivo.</td>
+                </tr>
+                <tr>
+                    <td><strong>Contraseña de la Firma</strong></td>
+                    <td>Clave que el dueño estableció o se le entregó junto con el archivo <code>.p12</code>. Necesaria para firmar los XML.</td>
+                </tr>
+                <tr>
+                    <td><strong>Habilitación en "SRI en Línea"</strong></td>
+                    <td>El RUC debe estar habilitado para facturación electrónica en ambiente <strong>Producción</strong> dentro del portal del SRI.</td>
+                </tr>
+                <tr>
+                    <td><strong>Establecimiento y Emisor</strong></td>
+                    <td>Número de Establecimiento (ej: 001) y Punto de Emisión (ej: 001) habilitados según el RUC.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section" style="page-break-before: always;">
+        <h2 class="section-title">4. Guía Paso a Paso: Puesta en Producción</h2>
+        
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <h4>Habilitar Producción en el SRI</h4>
+                <p>El contribuyente debe ingresar a <strong>SRI en Línea</strong> con su RUC y clave. Ir a <em>Facturación Electrónica -> Pruebas -> Autorización</em> y luego <em>Facturación Electrónica -> Producción -> Autorización</em> y solicitar el inicio de emisión electrónica.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <h4>Ingresar al Módulo "Config. SRI"</h4>
+                <p>Dentro del sistema del gimnasio, iniciar sesión como Administrador y dirigirse en el menú izquierdo a <strong>Administración > Config. SRI</strong>.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <h4>Cargar Credenciales y Firma</h4>
+                <p>Llenar los campos obligatorios: Razón Social (idéntico al RUC), Nombre Comercial, RUC, Tasa de IVA (Ej. 15%).<br>
+                En el campo de <strong>Firma Electrónica</strong>, hacer clic y subir el archivo <code>.p12</code>.<br>
+                Ingresar la <strong>Clave de la Firma</strong> con precaución respetando mayúsculas y minúsculas.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+                <h4>Seleccionar Ambiente</h4>
+                <p>En el selector "Ambiente SRI", cambiar la opción de <span class="highlight">Pruebas</span> a <span class="badge">Producción</span>. Colocar el Establecimiento (ej: 001) y el Punto de Emisión (ej: 001). Guardar Cambios.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+                <h4>Realizar Primera Factura</h4>
+                <p>Ir al Punto de Venta o a una Suscripción y emitir un comprobante. Luego, dirigirse a la bandeja de "Facturación Electrónica". Si el estado marca <strong>AUTORIZADO</strong>, la configuración fue exitosa y la factura ya es legal y consta en los registros del SRI.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

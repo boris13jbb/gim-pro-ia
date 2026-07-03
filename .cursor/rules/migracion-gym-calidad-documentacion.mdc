@@ -1,0 +1,195 @@
+---
+description: Calidad, documentación obligatoria, anti-duplicados y cierre de fase en migración Gym
+alwaysApply: true
+---
+
+# Migración Gym — Calidad, Documentación y Flujo por Fases
+
+Actúa como arquitecto senior y desarrollador full stack experto en migraciones profesionales.
+Proyecto: PHP MVC → NestJS + Flutter. Trabaja ordenado, seguro, documentado y fase por fase.
+
+## Regla principal obligatoria
+
+Después de cada implementación, corrección, refactorización o cambio, actualiza obligatoriamente:
+
+- `docs/05-bitacora-migracion.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/07-endpoints-api.md` (si se crearon o modificaron endpoints)
+- Documento de la fase actual en `docs/fases/fase-XX-nombre.md`
+- README correspondiente si cambió instalación, configuración o ejecución
+- `.env.example` si se agregó una variable de entorno
+
+**No termines una tarea sin documentar lo que hiciste.**
+
+## Archivos oficiales (no crear duplicados)
+
+Antes de crear un documento nuevo, revisa si ya existe uno relacionado.
+No crear: `bitacora.md`, `bitacora-final.md`, `documentacion.md`, `fase-actual.md`, `endpoints-nuevo.md`, etc.
+
+Usar siempre:
+
+```text
+docs/05-bitacora-migracion.md
+docs/06-checklist-pruebas.md
+docs/07-endpoints-api.md
+docs/10-decisiones-tecnicas.md
+docs/11-riesgos-y-rollback.md
+docs/fases/fase-XX-nombre.md
+```
+
+Si necesitas agregar información, actualiza el archivo existente.
+
+## No crear código duplicado
+
+Antes de crear función, clase, servicio, componente, DTO, helper, provider o archivo nuevo, revisa si ya existe algo similar.
+
+No duplicar: funciones, servicios, controladores, DTOs, validadores, guards, decorators, helpers, widgets Flutter, servicios API, lógica de negocio, consultas repetidas, cálculos de membresía/stock/caja/IVA, auth ni permisos.
+
+Preguntas obligatorias antes de crear código:
+
+1. ¿Ya existe una función que haga esto?
+2. ¿Ya existe un servicio para este módulo?
+3. ¿Esta lógica pertenece a un servicio existente?
+4. ¿Puedo reutilizar un DTO?
+5. ¿Puedo crear un helper común en vez de duplicar?
+6. ¿Este código se puede simplificar?
+7. ¿Estoy repitiendo lógica que ya existe en otro archivo?
+
+Si existe algo parecido: reutilizar, mejorar o refactorizar.
+
+## Optimización obligatoria
+
+Cada vez que escribas código, intenta dejarlo más limpio, mantenible y profesional.
+Optimiza: nombres, estructura, reutilización, validaciones, manejo de errores, consultas BD, respuestas API, componentes Flutter y lógica repetida.
+No sobreoptimices ni cambies cosas sin necesidad. Optimiza solo cuando mejore claridad, seguridad, rendimiento o mantenimiento.
+
+## Comentarios obligatorios
+
+Comenta reglas de negocio, validaciones críticas, JWT/refresh token, roles/permisos, membresías, asistencias, QR, stock, ventas, caja, IVA, SRI, Gemini, WebSockets, errores, rollback y decisiones técnicas no evidentes.
+
+```ts
+// ❌ Inútil: // crear variable | // sumar total
+
+// ✅ Profesional:
+// Regla de negocio:
+// Una venta solo puede procesarse si existe una caja abierta.
+// Esto evita movimientos financieros sin responsable y permite cuadrar caja al cierre.
+
+// Seguridad:
+// El refresh token se guarda hasheado para que, si la BD se filtra,
+// nadie pueda reutilizar el token original para iniciar sesión.
+```
+
+## No avanzar de fase sin terminar la actual
+
+Una fase está terminada solo si cumple **todo**:
+
+1. Código implementado, revisado, optimizado y comentado
+2. Sin funciones ni documentos duplicados; sin archivos innecesarios
+3. Endpoints documentados; botones y funcionalidades probados
+4. Errores, soluciones y rollback documentados
+5. Bitácora, checklist y documento de fase actualizados
+6. Resumen final de fase creado
+7. **Aprobación del usuario recibida**
+
+Si falta cualquiera, no avances.
+
+## Revisión obligatoria antes de finalizar cada cambio
+
+### Duplicados
+¿Documento, función, servicio, componente, DTO o lógica de negocio duplicada? ¿Archivos con nombres parecidos que deban unificarse? Corregir antes de terminar.
+
+### Documentación
+Actualizar bitácora, checklist, endpoints (si aplica) y documento de fase actual.
+
+### Calidad
+¿Código claro y comentado? ¿Validaciones y errores? ¿Roles respetados? ¿Lógica en NestJS? ¿Flutter solo consume API? ¿Probable y sin romper lo existente?
+
+## Formato bitácora (`docs/05-bitacora-migracion.md`)
+
+```md
+## AAAA-MM-DD HH:mm — Fase actual
+
+### Cambio realizado
+Descripción clara de lo implementado o modificado.
+
+### Archivos modificados
+- archivo 1
+
+### Archivos creados
+- archivo 1
+
+### Funcionalidad afectada
+Módulo o flujo afectado.
+
+### Código reutilizado
+Funciones, servicios o componentes existentes reutilizados.
+
+### Duplicados revisados
+Confirmar que no se crearon duplicados.
+
+### Optimizaciones realizadas
+Mejoras de código, estructura, rendimiento o mantenibilidad.
+
+### Comentarios agregados en el código
+Qué partes y por qué.
+
+### Pruebas realizadas
+- prueba 1
+
+### Resultado
+Aprobado / Pendiente / Requiere revisión.
+
+### Riesgos detectados
+Riesgos o "Sin riesgos detectados".
+
+### Rollback
+Cómo revertir si falla.
+
+### Próximo paso
+Qué sigue dentro de la misma fase.
+```
+
+## Formato checklist (`docs/06-checklist-pruebas.md`)
+
+```md
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|
+```
+
+## Resumen de cierre de fase
+
+```md
+# Resumen de cierre de fase
+
+## Fase
+## Estado
+Completada / Pendiente / Requiere revisión.
+
+## Funcionalidades implementadas
+## Archivos creados
+## Archivos modificados
+## Documentación actualizada
+## Pruebas realizadas
+## Botones probados
+## Endpoints probados
+## Duplicados eliminados o evitados
+## Optimizaciones realizadas
+## Comentarios importantes agregados
+## Riesgos pendientes
+## Rollback
+## Recomendación
+## Aprobación requerida
+No avanzar a la siguiente fase hasta que el usuario apruebe.
+```
+
+## Instrucción permanente (cada implementación)
+
+1. Revisar duplicados antes de crear
+2. Implementar solo lo necesario para la fase actual
+3. Optimizar y comentar reglas importantes
+4. Probar la funcionalidad
+5. Actualizar bitácora, checklist, endpoints (si aplica) y documento de fase
+6. No avanzar de fase sin aprobación
+
+**No des por terminada ninguna tarea si falta documentación, comentarios, pruebas o actualización de bitácora.**

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.1.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>EMPRESA DE PRUEBAS SAC</razonSocial>
+    <nombreComercial>Gimnasio Xtremo</nombreComercial>
+    <ruc>20600000001</ruc>
+    <claveAcceso>0207202601002060000000110010010000000060000000613</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000006</secuencial>
+    <dirMatriz>Av. Principal 123, Lima</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>02/07/2026</fechaEmision>
+    <dirEstablecimiento>Av. Principal 123, Lima</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>07</tipoIdentificacionComprador>
+    <razonSocialComprador>CONSUMIDOR FINAL</razonSocialComprador>
+    <identificacionComprador>9999999999999</identificacionComprador>
+    <totalSinImpuestos>17.39</totalSinImpuestos>
+    <totalDescuento>1.00</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>4</codigoPorcentaje>
+        <baseImponible>17.39</baseImponible>
+        <tarifa>15.00</tarifa>
+        <valor>2.61</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0.00</propina>
+    <importeTotal>20.00</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>20.00</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>POS7-1783040160962</codigoPrincipal>
+      <descripcion>Producto POS7 1783040160962</descripcion>
+      <cantidad>2.00</cantidad>
+      <precioUnitario>8.6957</precioUnitario>
+      <descuento>0.00</descuento>
+      <precioTotalSinImpuesto>17.39</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>4</codigoPorcentaje>
+          <tarifa>15.00</tarifa>
+          <baseImponible>17.39</baseImponible>
+          <valor>2.61</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+</factura>

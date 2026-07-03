@@ -1,0 +1,164 @@
+---
+description: Autenticación JWT obligatoria — NestJS, Flutter, guards, tokens y pruebas (fase 02)
+alwaysApply: true
+---
+
+# Regla obligatoria de autenticación con JWT
+
+El sistema migrado usa autenticación basada en **JWT (Access Token + Refresh Token)** en NestJS.
+
+**Obligatorio (NestJS API):** JWT en `Authorization: Bearer <access_token>` para endpoints privados + refresh token para renovación.
+
+**Prohibido:** sesiones PHP, cookies de sesión PHP, `express-session`, estado de auth en memoria del servidor o cualquier lógica heredada de autenticación PHP para la nueva API.
+
+## Arquitectura obligatoria
+
+```text
+Flutter / Frontend
+   ↓
+NestJS API con JWT
+   ↓
+Base de datos
+```
+
+## Tokens requeridos
+
+### Access Token
+
+- Duración corta (`JWT_ACCESS_EXPIRES_IN`, ej. `15m`)
+- Acceso a endpoints protegidos
+- Payload: `sub`, `email`, `role`, `userType` (+ `memberId` si es socio)
+- Sin información sensible
+
+### Refresh Token
+
+- Duración larga (`JWT_REFRESH_EXPIRES_IN`, ej. `7d`)
+- Renueva el access token
+- Almacenamiento seguro en cliente
+- En backend: **hasheado**, nunca en texto plano (guardar hash + metadata mínima)
+- Debe poder **revocarse** (logout lo invalida)
+- Recomendado: **rotación** de refresh token al usar `/api/auth/refresh` (invalida el anterior) para reducir replay
+
+## Variables de entorno (`.env` + `.env.example`)
+
+```env
+JWT_ACCESS_SECRET=change_me_access_secret
+JWT_REFRESH_SECRET=change_me_refresh_secret
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+```
+
+No guardar secretos JWT ni tokens en el repositorio.
+
+## Endpoints obligatorios
+
+```text
+POST /api/auth/login
+POST /api/auth/refresh
+POST /api/auth/logout
+GET  /api/auth/me
+```
+
+## Backend NestJS — implementación
+
+- JWT para: `admin`, `recepcionista`, `entrenador`, `socio`
+- Separar **Access** y **Refresh**:
+  - `JwtAccessGuard` para endpoints privados (valida access token)
+  - `JwtRefreshGuard` para `/api/auth/refresh` (valida refresh token)
+- `RolesGuard` + decorador `@Roles()` para permisos por rol
+- Decorador `@CurrentUser()` para obtener usuario autenticado (payload + ids)
+- Decorador `@Public()` (o equivalente) para endpoints públicos (`/login`, `/refresh` y health si aplica)
+- Usuario inactivo → no puede iniciar sesión
+- Sin token o token inválido → **401**
+- Rol sin permiso → **403**
+- Socio solo accede a **su propia** información (validar `memberId` vs `sub`)
+
+### Reglas de implementación (Fase 02)
+
+- Implementar estrategias Passport separadas: `JwtAccessStrategy` y `JwtRefreshStrategy`
+- En `/api/auth/logout`: invalidar refresh token (revocación server-side)
+- En `/api/auth/refresh`: emitir nuevo access token y (si hay rotación) nuevo refresh token, revocando el anterior
+- No exponer refresh token en logs; no devolver secretos; sanitizar errores de auth
+- Documentar el **modelo de persistencia** de refresh tokens (tabla, campos y revocación)
+
+### Payload JWT — staff
+
+```json
+{
+  "sub": 1,
+  "email": "admin@irongym.com",
+  "role": "admin",
+  "userType": "staff"
+}
+```
+
+### Payload JWT — socio
+
+```json
+{
+  "sub": 25,
+  "email": "socio@email.com",
+  "role": "socio",
+  "userType": "member",
+  "memberId": 25
+}
+```
+
+### Comentarios obligatorios en código
+
+Documentar en **guards, estrategias y servicios** de auth:
+
+- Cómo se genera el JWT
+- Cómo se valida el JWT
+- Cómo funciona el refresh token
+- Cómo se protegen rutas por rol
+- Cómo se evita que un socio vea datos de otro socio
+- Cómo se invalida sesión al cerrar sesión
+
+```ts
+// Regla de seguridad:
+// Este guard valida el JWT enviado por Flutter en el header Authorization.
+// Si el token no existe, está vencido o fue firmado con un secreto inválido,
+// la API rechaza la petición con 401 antes de llegar al controlador.
+```
+
+## Flutter — consumo de API
+
+- Guardar tokens en **almacenamiento seguro** (no variables globales simples)
+- Enviar access token en cada petición protegida:
+
+```http
+Authorization: Bearer ACCESS_TOKEN
+```
+
+- Access token vencido → usar refresh token
+- Refresh token vencido → cerrar sesión
+- **No calcular permisos en Flutter**; solo mostrar/ocultar según respuesta de la API
+
+## Pruebas obligatorias
+
+Probar y documentar en `docs/fases/fase-02-auth-usuarios-roles.md`, `docs/06-checklist-pruebas.md` y `docs/07-endpoints-api.md` (y en Swagger):
+
+| Escenario | Resultado esperado |
+|-----------|-------------------|
+| Login correcto | Tokens emitidos |
+| Contraseña incorrecta | Error controlado |
+| Usuario inactivo | Rechazo de login |
+| Access token válido | Acceso permitido |
+| Access token vencido | 401 → refresh |
+| Refresh token válido | Nuevo access token |
+| Refresh token vencido | Cierre de sesión |
+| Logout | Refresh invalidado |
+| Sin token | 401 |
+| Token inválido | 401 |
+| Rol no permitido | 403 |
+| Socio ve datos de otro socio | 403 / bloqueado |
+| Admin en módulo administrativo | Acceso permitido |
+| Recepcionista en módulo permitido | Acceso permitido |
+| Entrenador solo en módulos autorizados | Acceso según rol |
+
+### Documentación obligatoria (Fase 02)
+
+- `docs/fases/fase-02-auth-usuarios-roles.md`: decisión técnica (access/refresh, rotación, revocación), modelo de datos de refresh tokens, diagrama de flujo login/refresh/logout
+- `docs/07-endpoints-api.md`: endpoints + roles + errores (401/403) + ejemplos de request/response
+- `docs/06-checklist-pruebas.md`: checklist de pruebas (incluye casos de expiración y revocación)

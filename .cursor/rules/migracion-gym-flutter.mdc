@@ -1,0 +1,42 @@
+---
+description: Arquitectura y estándares Flutter para migración Gym System
+globs: frontend-flutter/**/*
+alwaysApply: false
+---
+
+# Flutter — Gym System (cliente API)
+
+## Estructura
+
+```
+frontend-flutter/lib/
+  main.dart, app/
+  core/{api,auth,storage,theme,router,widgets,errors,utils}/
+  features/{auth,home,profile,membership,attendance,qr_access,progress,routines,payments,notifications,ai_assistant}/
+```
+
+## Nombres
+
+Seguir `.cursor/rules/migracion-gym-nombres-estandar.mdc` (diccionario oficial, inglés en código, snake_case archivos/carpetas). Diccionario documentado en `docs/10-decisiones-tecnicas.md`.
+
+## Reglas
+
+Flutter es **solo consumidor de API**. Prohibido:
+- Calcular vencimientos, permisos o estado de membresía en cliente
+- Guardar API Keys privadas o tokens de forma insegura
+- Conectar directo a Gemini
+
+Obligatorio:
+- Servicios API centralizados
+- Estados: loading, success, error, empty
+- Cada botón con acción clara; cada pantalla probable
+- Errores amigables; diseño profesional y responsive
+- Comentar providers, servicios y lógica importante
+
+## Pruebas de botones
+
+Registrar en `docs/06-checklist-pruebas.md`:
+
+| Pantalla | Botón | Acción | Endpoint | Entidad | Resultado esperado | Estado | Observación |
+
+Probar: estado correcto, error, validaciones, permisos, resultado en BD, respuesta visual.

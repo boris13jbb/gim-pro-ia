@@ -1,0 +1,501 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model asistencias {
+  id              Int                         @id @default(autoincrement())
+  socio_id        Int
+  fecha_hora      DateTime?                   @default(now()) @db.DateTime(0)
+  metodo_ingreso  asistencias_metodo_ingreso?
+  socios          socios                      @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "asistencias_ibfk_1")
+
+  @@index([socio_id], map: "socio_id")
+}
+
+enum asistencias_metodo_ingreso {
+  manual
+  dni
+  qr
+  app
+}
+
+model cajas {
+  id             Int           @id @default(autoincrement())
+  usuario_id     Int
+  monto_inicial  Decimal       @db.Decimal(10, 2)
+  monto_final    Decimal?      @default(0.00) @db.Decimal(10, 2)
+  total_ventas   Decimal?      @default(0.00) @db.Decimal(10, 2)
+  total_gastos   Decimal?      @default(0.00) @db.Decimal(10, 2)
+  diferencia     Decimal?      @default(0.00) @db.Decimal(10, 2)
+  fecha_apertura DateTime?     @default(now()) @db.DateTime(0)
+  fecha_cierre   DateTime?     @db.DateTime(0)
+  estado         cajas_estado? @default(abierta)
+  usuarios       usuarios      @relation(fields: [usuario_id], references: [id], onUpdate: Restrict, map: "cajas_ibfk_1")
+  ventas         ventas[]
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model categorias {
+  id        Int                @id @default(autoincrement())
+  nombre    String             @db.VarChar(100)
+  estado    categorias_estado? @default(activo)
+  productos productos[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comprobantes_detalle {
+  id                        Int                       @id @default(autoincrement())
+  comprobante_id            Int
+  linea                     Int                       @default(1)
+  codigo                    String?                   @db.VarChar(50)
+  descripcion               String                    @db.VarChar(255)
+  unidad                    String?                   @default("NIU") @db.VarChar(5)
+  cantidad                  Decimal                   @default(1.000) @db.Decimal(12, 3)
+  valor_unitario            Decimal                   @db.Decimal(12, 4)
+  precio_unitario           Decimal                   @db.Decimal(12, 4)
+  subtotal                  Decimal                   @db.Decimal(12, 2)
+  igv_linea                 Decimal                   @default(0.00) @db.Decimal(12, 2)
+  total_linea               Decimal                   @db.Decimal(12, 2)
+  tipo_afectacion           String?                   @default("10") @db.VarChar(2)
+  comprobantes_electronicos comprobantes_electronicos @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_comp_detalle")
+
+  @@index([comprobante_id], map: "idx_comp")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model comprobantes_electronicos {
+  id                    Int                                     @id @default(autoincrement())
+  origen_tipo           comprobantes_electronicos_origen_tipo
+  origen_id             Int?
+  tipo_doc              String                                  @db.VarChar(2)
+  serie                 String                                  @db.VarChar(17)
+  correlativo           Int
+  clave_acceso          String?                                 @db.VarChar(49)
+  fecha_emision         DateTime                                @db.Date
+  hora_emision          DateTime?                               @db.Time(0)
+  fecha_vencimiento     DateTime?                               @db.Date
+  emisor_ruc            String                                  @db.VarChar(15)
+  emisor_razon          String                                  @db.VarChar(255)
+  cliente_tipo_doc      String                                  @db.VarChar(2)
+  cliente_num_doc       String?                                 @db.VarChar(20)
+  cliente_razon         String                                  @db.VarChar(255)
+  cliente_direccion     String?                                 @db.VarChar(255)
+  cliente_email         String?                                 @db.VarChar(120)
+  moneda                String?                                 @default("PEN") @db.VarChar(3)
+  gravadas              Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  inafectas             Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  exoneradas            Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  gratuitas             Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  descuentos            Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  igv                   Decimal?                                @default(0.00) @db.Decimal(12, 2)
+  total                 Decimal                                 @db.Decimal(12, 2)
+  total_letras          String?                                 @db.VarChar(255)
+  forma_pago            comprobantes_electronicos_forma_pago?   @default(Contado)
+  metodo_pago           String?                                 @default("efectivo") @db.VarChar(40)
+  ref_tipo_doc          String?                                 @db.VarChar(2)
+  ref_serie             String?                                 @db.VarChar(4)
+  ref_correlativo       Int?
+  motivo_codigo         String?                                 @db.VarChar(2)
+  motivo_descripcion    String?                                 @db.VarChar(250)
+  xml_firmado           String?                                 @db.MediumText
+  sri_authorization_xml String?                                 @db.MediumText
+  xml_hash              String?                                 @db.VarChar(64)
+  cdr_zip               Bytes?                                  @db.MediumBlob
+  cdr_codigo            String?                                 @db.VarChar(10)
+  cdr_descripcion       String?                                 @db.VarChar(255)
+  estado_sri            comprobantes_electronicos_estado_sri?   @default(pendiente)
+  estado_sunat          comprobantes_electronicos_estado_sunat? @default(pendiente)
+  mensaje_error         String?                                 @db.Text
+  usuario_id            Int?
+  creado_en             DateTime?                               @default(now()) @db.DateTime(0)
+  actualizado_en        DateTime?                               @default(now()) @db.DateTime(0)
+  comprobantes_detalle  comprobantes_detalle[]
+
+  @@unique([tipo_doc, serie, correlativo], map: "unq_comprobante")
+  @@index([estado_sunat], map: "idx_estado")
+  @@index([fecha_emision], map: "idx_fecha")
+  @@index([origen_tipo, origen_id], map: "idx_origen")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model configuracion {
+  id                    Int                           @id
+  nombre_sistema        String?                       @db.VarChar(100)
+  ruc                   String?                       @db.VarChar(20)
+  razon_social          String?                       @db.VarChar(255)
+  nombre_comercial      String?                       @db.VarChar(255)
+  direccion             String?                       @db.VarChar(255)
+  ubigeo                String?                       @default("150101") @db.VarChar(6)
+  departamento          String?                       @default("LIMA") @db.VarChar(60)
+  provincia             String?                       @default("LIMA") @db.VarChar(60)
+  distrito              String?                       @default("LIMA") @db.VarChar(60)
+  urbanizacion          String?                       @db.VarChar(120)
+  codigo_pais           String?                       @default("PE") @db.VarChar(2)
+  telefono              String?                       @db.VarChar(20)
+  email                 String?                       @db.VarChar(100)
+  logo                  String?                       @db.VarChar(255)
+  moneda                String?                       @default("$") @db.VarChar(10)
+  sunat_ambiente        configuracion_sunat_ambiente? @default(beta)
+  sunat_usuario_sol     String?                       @db.VarChar(50)
+  sunat_clave_sol       String?                       @db.VarChar(255)
+  sunat_certificado     String?                       @db.VarChar(255)
+  sunat_cert_clave      String?                       @db.VarChar(255)
+  igv_tasa              Decimal?                      @default(18.00) @db.Decimal(5, 2)
+  incluye_igv           Boolean?                      @default(true)
+  sri_ambiente          configuracion_sri_ambiente?   @default(dbgenerated("1"))
+  sri_establecimiento   String?                       @default("001") @db.VarChar(3)
+  sri_punto_emision     String?                       @default("001") @db.VarChar(3)
+  sri_certificado_p12   String?                       @db.VarChar(255)
+  sri_certificado_clave String?                       @db.VarChar(255)
+  iva_tasa              Decimal?                      @default(15.00) @db.Decimal(5, 2)
+  incluye_iva           Boolean?                      @default(true)
+}
+
+model detalle_ventas {
+  id              Int       @id @default(autoincrement())
+  venta_id        Int
+  producto_id     Int
+  cantidad        Int
+  precio_unitario Decimal   @db.Decimal(10, 2)
+  subtotal        Decimal   @db.Decimal(10, 2)
+  ventas          ventas    @relation(fields: [venta_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detalle_ventas_ibfk_1")
+  productos       productos @relation(fields: [producto_id], references: [id], onUpdate: Restrict, map: "detalle_ventas_ibfk_2")
+
+  @@index([producto_id], map: "producto_id")
+  @@index([venta_id], map: "venta_id")
+}
+
+model gastos {
+  id               Int            @id @default(autoincrement())
+  descripcion      String         @db.VarChar(255)
+  monto            Decimal        @db.Decimal(10, 2)
+  fecha            DateTime       @db.Date
+  estado           gastos_estado? @default(creado)
+  motivo_anulacion String?        @db.VarChar(255)
+}
+
+model medidas {
+  id       Int       @id @default(autoincrement())
+  socio_id Int
+  peso     Decimal?  @db.Decimal(5, 2)
+  grasa    Decimal?  @db.Decimal(5, 2)
+  cintura  Decimal?  @db.Decimal(5, 2)
+  brazo    Decimal?  @db.Decimal(5, 2)
+  fecha    DateTime? @db.Date
+  socios   socios    @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "medidas_ibfk_1")
+
+  @@index([socio_id], map: "socio_id")
+}
+
+model planes {
+  id            Int             @id @default(autoincrement())
+  nombre        String          @db.VarChar(50)
+  precio        Decimal         @db.Decimal(10, 2)
+  duracion_dias Int
+  descripcion   String?         @db.Text
+  estado        planes_estado?  @default(activo)
+  suscripciones suscripciones[]
+}
+
+model productos {
+  id             Int               @id @default(autoincrement())
+  categoria_id   Int
+  codigo         String?           @db.VarChar(50)
+  nombre         String            @db.VarChar(150)
+  precio_compra  Decimal           @db.Decimal(10, 2)
+  precio_venta   Decimal           @db.Decimal(10, 2)
+  stock          Int?              @default(0)
+  foto           String?           @db.VarChar(255)
+  estado         productos_estado? @default(activo)
+  detalle_ventas detalle_ventas[]
+  categorias     categorias        @relation(fields: [categoria_id], references: [id], onUpdate: Restrict, map: "productos_ibfk_1")
+  movimientos_inventario movimientos_inventario[]
+
+  @@index([categoria_id], map: "categoria_id")
+}
+
+/// Auditoría de entradas/salidas de stock (NestJS Fase 06 ampliada)
+model movimientos_inventario {
+  id             Int                          @id @default(autoincrement())
+  producto_id    Int
+  tipo           movimientos_inventario_tipo
+  cantidad       Int
+  stock_anterior Int
+  stock_nuevo    Int
+  venta_id       Int?
+  usuario_id     Int?
+  notas          String?                      @db.VarChar(255)
+  created_at     DateTime                     @default(now()) @db.DateTime(0)
+  productos      productos                    @relation(fields: [producto_id], references: [id], onUpdate: Restrict, map: "movimientos_inventario_ibfk_1")
+  ventas         ventas?                      @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_2")
+  usuarios       usuarios?                    @relation(fields: [usuario_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_3")
+
+  @@index([producto_id], map: "idx_mov_inv_producto")
+  @@index([venta_id], map: "idx_mov_inv_venta")
+  @@index([usuario_id], map: "idx_mov_inv_usuario")
+  @@index([created_at], map: "idx_mov_inv_created")
+}
+
+model rutinas {
+  id               Int       @id @default(autoincrement())
+  socio_id         Int
+  dia1             String?   @db.Text
+  dia2             String?   @db.Text
+  dia3             String?   @db.Text
+  dia4             String?   @db.Text
+  dia5             String?   @db.Text
+  dia6             String?   @db.Text
+  observaciones    String?   @db.Text
+  fecha_asignacion DateTime? @default(now()) @db.DateTime(0)
+  socios           socios    @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "rutinas_ibfk_1")
+
+  @@index([socio_id], map: "socio_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model socios {
+  id               Int             @id @default(autoincrement())
+  nombre           String          @db.VarChar(100)
+  dni              String          @unique(map: "dni") @db.VarChar(20)
+  tipo_doc         String?         @default("1") @db.VarChar(1)
+  direccion_fiscal String?         @db.VarChar(255)
+  email            String?         @db.VarChar(100)
+  telefono         String?         @db.VarChar(20)
+  whatsapp_api_key String?         @db.VarChar(50)
+  fecha_registro   DateTime?       @default(now()) @db.DateTime(0)
+  estado           socios_estado?  @default(activo)
+  foto             String?         @db.VarChar(255)
+  password         String?         @db.VarChar(255)
+  asistencias      asistencias[]
+  medidas          medidas[]
+  rutinas          rutinas[]
+  suscripciones    suscripciones[]
+  ventas           ventas[]
+  refreshTokens    auth_refresh_tokens[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sri_log {
+  id             Int       @id @default(autoincrement())
+  comprobante_id Int?
+  accion         String    @db.VarChar(40)
+  request_xml    String?   @db.MediumText
+  response_xml   String?   @db.MediumText
+  codigo         String?   @db.VarChar(10)
+  mensaje        String?   @db.Text
+  creado_en      DateTime? @default(now()) @db.DateTime(0)
+
+  @@index([accion], map: "idx_accion")
+  @@index([comprobante_id], map: "idx_comp_log")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sri_series {
+  id          Int                @id @default(autoincrement())
+  tipo_doc    String             @db.VarChar(2)
+  serie       String             @db.VarChar(6)
+  correlativo Int                @default(0)
+  descripcion String?            @db.VarChar(120)
+  estado      sri_series_estado? @default(activo)
+
+  @@unique([tipo_doc, serie], map: "unq_tipo_serie")
+}
+
+model suscripciones {
+  id               Int                             @id @default(autoincrement())
+  socio_id         Int?
+  plan_id          Int?
+  fecha_inicio     DateTime?                       @db.Date
+  fecha_fin        DateTime?                       @db.Date
+  estado           suscripciones_estado?           @default(activa)
+  tipo_comprobante suscripciones_tipo_comprobante? @default(boleta)
+  comprobante_id   Int?
+  socios           socios?                         @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "suscripciones_ibfk_1")
+  planes           planes?                         @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "suscripciones_ibfk_2")
+
+  @@index([plan_id], map: "plan_id")
+  @@index([socio_id], map: "socio_id")
+}
+
+model usuarios {
+  id            Int                   @id @default(autoincrement())
+  nombre        String?               @db.VarChar(100)
+  email         String?               @unique(map: "email") @db.VarChar(100)
+  password      String?               @db.VarChar(255)
+  rol           usuarios_rol?         @default(recepcionista)
+  estado        usuarios_estado?      @default(activo)
+  cajas         cajas[]
+  refreshTokens auth_refresh_tokens[]
+  movimientos_inventario movimientos_inventario[]
+}
+
+model auth_refresh_tokens {
+  id           Int       @id @default(autoincrement())
+  userId       Int?
+  memberId     Int?
+  tokenHash    String    @db.VarChar(255)
+  jti          String    @unique(map: "jti") @db.VarChar(64)
+  expiresAt    DateTime  @db.DateTime(0)
+  revokedAt    DateTime? @db.DateTime(0)
+  replacedById Int?
+  createdAt    DateTime  @default(now()) @db.DateTime(0)
+  userAgent    String?   @db.VarChar(255)
+  ip           String?   @db.VarChar(64)
+
+  usuarios   usuarios?             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "auth_refresh_tokens_ibfk_1")
+  socios     socios?               @relation(fields: [memberId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "auth_refresh_tokens_member_fk")
+  replacedBy auth_refresh_tokens?  @relation("refresh_replacement", fields: [replacedById], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  replaces   auth_refresh_tokens[] @relation("refresh_replacement")
+
+  @@index([userId], map: "idx_auth_refresh_tokens_userId")
+  @@index([memberId], map: "idx_auth_refresh_tokens_memberId")
+  @@index([expiresAt], map: "idx_auth_refresh_tokens_expiresAt")
+  @@map("auth_refresh_tokens")
+}
+
+model ventas {
+  id                Int                      @id @default(autoincrement())
+  caja_id           Int
+  socio_id          Int?
+  total             Decimal                  @db.Decimal(10, 2)
+  descuento         Decimal                  @default(0.00) @db.Decimal(10, 2)
+  metodo_pago       ventas_metodo_pago?      @default(efectivo)
+  tipo_comprobante  ventas_tipo_comprobante? @default(boleta)
+  cliente_tipo_doc  String?                  @db.VarChar(1)
+  fecha             DateTime?                @default(now()) @db.DateTime(0)
+  cliente_num_doc   String?                  @db.VarChar(20)
+  cliente_razon     String?                  @db.VarChar(255)
+  cliente_direccion String?                  @db.VarChar(255)
+  comprobante_id    Int?
+  detalle_ventas    detalle_ventas[]
+  movimientos_inventario movimientos_inventario[]
+  cajas             cajas                    @relation(fields: [caja_id], references: [id], onUpdate: Restrict, map: "ventas_ibfk_1")
+  socios            socios?                  @relation(fields: [socio_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "ventas_ibfk_2")
+
+  @@index([caja_id], map: "caja_id")
+  @@index([socio_id], map: "socio_id")
+}
+
+enum comprobantes_electronicos_origen_tipo {
+  suscripcion
+  venta
+  manual
+}
+
+enum categorias_estado {
+  activo
+  inactivo
+}
+
+enum gastos_estado {
+  creado
+  anulado
+}
+
+enum usuarios_rol {
+  admin
+  recepcionista
+  entrenador
+}
+
+enum planes_estado {
+  activo
+  inactivo
+}
+
+enum sri_series_estado {
+  activo
+  inactivo
+}
+
+enum suscripciones_estado {
+  activa
+  vencida
+}
+
+enum usuarios_estado {
+  activo
+  inactivo
+}
+
+enum ventas_metodo_pago {
+  efectivo
+  tarjeta
+  transferencia
+}
+
+enum suscripciones_tipo_comprobante {
+  boleta
+  factura
+  ninguno
+}
+
+enum ventas_tipo_comprobante {
+  boleta
+  factura
+  ninguno
+}
+
+enum productos_estado {
+  activo
+  inactivo
+}
+
+enum cajas_estado {
+  abierta
+  cerrada
+}
+
+enum movimientos_inventario_tipo {
+  manual_add
+  manual_subtract
+  sale
+  product_create
+  product_update
+}
+
+enum socios_estado {
+  activo
+  inactivo
+  pendiente
+}
+
+enum configuracion_sunat_ambiente {
+  beta
+  produccion
+}
+
+enum configuracion_sri_ambiente {
+  pruebas    @map("1")
+  produccion @map("2")
+}
+
+enum comprobantes_electronicos_forma_pago {
+  Contado
+  Credito
+}
+
+enum comprobantes_electronicos_estado_sri {
+  pendiente
+  recibida
+  devuelta
+  autorizado
+  no_autorizado
+  anulado
+  error
+}
+
+enum comprobantes_electronicos_estado_sunat {
+  pendiente
+  aceptado
+  rechazado
+  anulado
+  observado
+  enviando
+  error
+}

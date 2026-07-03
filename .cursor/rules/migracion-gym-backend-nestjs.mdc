@@ -1,0 +1,55 @@
+---
+description: Arquitectura y estándares NestJS para migración Gym System
+globs: backend-nest/**/*
+alwaysApply: false
+---
+
+# Backend NestJS — Gym System
+
+## Estructura
+
+```
+backend-nest/src/
+  main.ts, app.module.ts
+  config/, database/
+  common/{decorators,filters,guards,interceptors,pipes,dto,utils}/
+  auth/, users/, roles/, members/, plans/, memberships/
+  attendance/, qr-access/, body-progress/, workout-routines/
+  categories/, products/, inventory/, sales/, pos/, cash-register/
+  reports/, billing-sri/, notifications/, ai-assistant/, websocket/, audit-logs/
+```
+
+Cada módulo: `module.ts`, `controller.ts`, `service.ts`, `dto/`, `entities/` o `prisma/`, `tests/` si aplica.
+
+## Nombres
+
+Seguir `.cursor/rules/migracion-gym-nombres-estandar.mdc` (diccionario oficial, inglés en código, kebab-case archivos/carpetas). Diccionario documentado en `docs/10-decisiones-tecnicas.md`.
+
+## Reglas
+
+- DTOs + `class-validator` + `class-transformer` en toda entrada
+- Guards para auth y roles; controladores solo reciben y delegan al servicio
+- Lógica de negocio en servicios, no en controladores
+- Preferir Prisma; SQL crudo solo con justificación
+- Transacciones en ventas, caja, stock y facturación
+- Swagger en **todos** los endpoints; respuestas consistentes
+- Manejo global de errores; no exponer stack traces
+- `.env` + `.env.example`; auditoría en acciones críticas
+
+## Seguridad
+
+JWT Access + Refresh Token, hash seguro de contraseñas, Helmet, CORS, rate limiting en login, sanitizar entradas, validar archivos (tamaño, MIME real). Roles: `admin`, `recepcionista`, `entrenador`, `socio`. El socio solo ve su propia información.
+
+## Comentarios obligatorios en
+
+Reglas de negocio, validaciones críticas, cálculos (membresía, stock, caja, IVA), SRI, auth, permisos, WebSockets, Gemini, transacciones, rollbacks, seguridad.
+
+```ts
+// Regla de negocio:
+// Una venta solo puede procesarse si existe una caja abierta.
+// Esto evita movimientos financieros sin responsable y permite cuadrar caja al cierre.
+```
+
+## Endpoints
+
+Documentar en `docs/07-endpoints-api.md`: método, ruta, descripción, rol, body, respuesta, errores, tablas, pruebas.

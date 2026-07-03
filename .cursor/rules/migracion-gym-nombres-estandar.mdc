@@ -1,0 +1,168 @@
+---
+description: Nombres profesionales, estandarizados y consistentes en todo el proyecto Gym System
+alwaysApply: true
+---
+
+# Regla de nombres profesionales y estandarizados
+
+Mantener nombres claros, profesionales, consistentes y fáciles de entender en archivos, carpetas, variables, funciones, clases, servicios, controladores, DTOs, entidades, módulos, componentes Flutter, providers, endpoints, tablas/columnas nuevas y documentación.
+
+## Regla principal
+
+**No inventar nombres sin revisar el contexto del proyecto.** Antes de crear un nombre nuevo, revisar:
+
+1. Sistema PHP actual (`gym-system/`)
+2. Base de datos
+3. Documentación (`docs/`)
+4. Módulos NestJS existentes (`backend-nest/`)
+5. Código Flutter existente (`frontend-flutter/`)
+
+Si ya existe un nombre equivalente, reutilizarlo o adaptarlo al estándar del lenguaje.
+
+## Longitud recomendada
+
+Descriptivos, no excesivamente largos:
+
+| Elemento | Máximo recomendado |
+|----------|-------------------|
+| Funciones | 2–4 palabras |
+| Variables | 1–3 palabras |
+| Archivos | 2–4 palabras |
+
+Si un nombre necesita más de 5 palabras, dividir la lógica o simplificar.
+
+```text
+❌ calculateCurrentActiveMembershipExpirationStatusForSelectedGymMember()
+✅ getMembershipStatus()
+
+❌ completeGymClientPhysicalProgressHistoricalMeasurementRegisterService
+✅ BodyProgressService
+```
+
+## Idioma obligatorio
+
+Código en **inglés técnico**. Documentación puede estar en español.
+
+```text
+❌ sociosService, membresiasController, registrarAttendance, ventasService
+✅ MembersService, MembershipsController, registerAttendance(), SalesService
+```
+
+## Diccionario oficial del proyecto
+
+| Concepto | Nombre estándar |
+|----------|----------------|
+| Usuario del sistema | `user` |
+| Socio del gimnasio | `member` |
+| Rol | `role` |
+| Permiso | `permission` |
+| Plan | `plan` |
+| Membresía/Suscripción | `membership` |
+| Asistencia | `attendance` |
+| Producto | `product` |
+| Categoría | `category` |
+| Inventario | `inventory` |
+| Venta | `sale` |
+| Detalle de venta | `saleItem` |
+| Caja | `cashRegister` |
+| Pago | `payment` |
+| Reporte | `report` |
+| Progreso físico | `bodyProgress` |
+| Medida corporal | `bodyMeasurement` |
+| Rutina | `workoutRoutine` |
+| Facturación SRI | `billingSri` |
+| Notificación | `notification` |
+| Asistente IA | `aiAssistant` |
+| Auditoría | `auditLog` |
+
+No crear sinónimos (`subscriptions`, `memberPlans`, `clientMemberships`) si ya existe `memberships`. Cambios al diccionario → documentar en `docs/10-decisiones-tecnicas.md`.
+
+## NestJS
+
+| Elemento | Convención | Ejemplo |
+|----------|------------|---------|
+| Carpetas | kebab-case | `members/`, `cash-register/`, `body-progress/` |
+| Archivos | kebab-case + sufijo | `members.service.ts`, `create-member.dto.ts` |
+| Clases | PascalCase | `MembersService`, `CreateMemberDto` |
+| Variables/funciones | camelCase | `memberId`, `getMembershipStatus()` |
+| Constantes | UPPER_SNAKE_CASE | `JWT_ACCESS_SECRET`, `DEFAULT_PAGE_SIZE` |
+
+Módulo coherente:
+
+```text
+members/
+  members.module.ts
+  members.controller.ts
+  members.service.ts
+  dto/create-member.dto.ts
+  dto/update-member.dto.ts
+```
+
+❌ No mezclar: `socios.controller.ts` + `members.service.ts` + `clients.module.ts`
+
+## Flutter
+
+| Elemento | Convención | Ejemplo |
+|----------|------------|---------|
+| Carpetas | snake_case | `body_progress/`, `workout_routines/` |
+| Archivos | snake_case | `login_page.dart`, `auth_provider.dart` |
+| Clases | PascalCase | `LoginPage`, `AuthProvider` |
+| Variables/funciones | camelCase | `memberId`, `loadProfile()` |
+
+## Base de datos (tablas/columnas nuevas)
+
+snake_case en inglés:
+
+```text
+users, members, memberships, attendance_records, cash_registers, body_measurements
+id, user_id, member_id, start_date, end_date, status, created_at, updated_at
+```
+
+❌ `idSocio`, `fechaFin`, `nombre_plan`, `membershipFecha`
+
+## Endpoints REST
+
+Rutas cortas, claras, en plural. Verbos en el método HTTP, no en la ruta.
+
+```text
+✅ GET /api/members  |  POST /api/members  |  PATCH /api/members/:id
+❌ /api/getAllMembers  |  /api/listarSocios  |  /api/memberMembershipSubscriptionRecords
+```
+
+Rutas estándar: `/api/users`, `/api/members`, `/api/plans`, `/api/memberships`, `/api/attendance`, `/api/products`, `/api/sales`, `/api/cash-register`, `/api/body-progress`, `/api/workout-routines`, `/api/billing-sri`, `/api/ai-assistant`
+
+## Funciones, variables y DTOs
+
+**Funciones:** verbos claros — `createMember()`, `getMembershipStatus()`, `registerAttendance()`, `openCashRegister()`
+
+❌ `processData()`, `handleStuff()`, `doAction()`, `createNewGymMemberAndValidateAllMembershipInformation()`
+
+**Variables:** claras y cortas — `member`, `memberId`, `status`, `total`, `stock`
+
+❌ `data`, `info`, `thing`, `value1`, `resultDataFromDatabaseForMember` (`data` solo en DTOs/respuestas genéricas cuando sea necesario)
+
+**DTOs:** `CreateUserDto`, `UpdateMemberDto`, `LoginDto`, `RegisterAttendanceDto`
+
+❌ `NewUserDto`, `UserCreateRequestDto`, `CreateNewUserInformationDto`
+
+## Revisión obligatoria antes de guardar
+
+1. ¿Siguen el estándar?
+2. ¿Hay español en nombres de código?
+3. ¿Hay nombres demasiado largos o vagos?
+4. ¿Hay dos nombres para el mismo concepto?
+5. ¿Se respetó el diccionario oficial?
+6. ¿Archivos y clases coinciden en nombre?
+7. ¿Rutas REST claras y cortas?
+8. ¿Documentación usa el mismo nombre que el código?
+
+Corregir inconsistencias antes de terminar.
+
+## Documentación de cambios de nombres
+
+Si se cambia un nombre importante, registrar en `docs/10-decisiones-tecnicas.md` y `docs/05-bitacora-migracion.md`:
+
+```md
+## Cambio de nombre
+### Nombre anterior / Nombre nuevo / Motivo / Archivos afectados / Riesgo / Pruebas
+```

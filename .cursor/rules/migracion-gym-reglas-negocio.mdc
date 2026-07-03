@@ -1,0 +1,45 @@
+---
+description: Reglas de negocio críticas — POS, asistencias, membresías, inventario, SRI, IA
+alwaysApply: true
+---
+
+# Reglas de Negocio — Gym System
+
+## Base de datos
+
+Antes de tocar BD: revisar estructura, documentar tablas/relaciones, respaldo, migración, rollback, prueba. No cambiar nombres ni eliminar columnas sin plan. Documentar en `docs/02-mapa-base-datos-actual.md` y `docs/11-riesgos-y-rollback.md`.
+
+## Ventas, POS y caja
+
+- No vender sin caja abierta ni sin stock; stock nunca negativo
+- Venta transaccional (rollback si falla una parte)
+- Descuento ≤ total; cierre de caja con diferencia; detalle y auditoría en toda venta
+- Probar: abrir/cerrar caja, venta correcta, sin caja, sin stock, con descuento, con/sin socio, anulación
+
+## Asistencias y QR
+
+Validar socio, estado activo y membresía vigente. No registrar si vencida. Registrar fecha/hora y método (manual, DNI, QR, app). Evitar duplicados. QR sin datos sensibles innecesarios.
+
+## Membresías
+
+Backend calcula estado; Flutter solo muestra. Estados: `activa`, `vencida`, `cancelada`, `suspendida`. Fecha inicio/fin obligatoria. Conservar historial; no borrar.
+
+## Inventario
+
+Stock nunca negativo. Toda entrada/salida registrada. Ventas descuentan stock. Ajustes auditados. No eliminar productos con historial; usar activo/inactivo. Alertar stock bajo.
+
+## Progreso físico y rutinas
+
+Conservar historial de medidas y rutinas. No borrar sin confirmación. IA usa datos como contexto. No diagnósticos médicos; mostrar advertencias en recomendaciones físicas.
+
+## IA con Gemini
+
+Flujo obligatorio: `Flutter → NestJS → Gemini → servicios NestJS → BD`. Herramientas internas sugeridas: `getMemberProfile()`, `getMembershipStatus()`, `getAttendanceSummary()`, `getBodyProgress()`, `getCurrentRoutine()`, `getPaymentHistory()`, `saveAiNote()`. La IA no inventa datos; solo accede a datos del usuario autenticado. Límites de uso, historial, mensajes de seguridad. Orientación general/motivacional; no diagnósticos ni medicamentos.
+
+## WebSockets
+
+Solo cuando aporte valor: chat IA, notificaciones, estado conexión, alertas membresía/caja, asistencia en vivo. Autenticar con JWT; validar salas y permisos; no exponer datos de otros usuarios; manejar reconexión; documentar eventos.
+
+## Facturación SRI (fase final)
+
+No romper flujo fiscal. Ambientes pruebas/producción. Certificado seguro. Separar: IVA, XML, firma, envío, autorización. Guardar logs, XML firmado/autorizado, secuenciales. Validar clave de acceso. Comparar con PHP antes de reemplazar.

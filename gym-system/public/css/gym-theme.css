@@ -1,0 +1,374 @@
+/* gym-theme.css - Modern Fitness Dashboard Palette */
+
+:root {
+    /* Primary Gym Colors (Updated to match new theme) */
+    --gym-primary: #6366F1; /* Indigo/Purple */
+    --gym-primary-hover: #4F46E5;
+    --gym-primary-light: #E0E7FF;
+    
+    /* Secondary/Accents */
+    --gym-secondary: #3B82F6; 
+    --gym-success: #10B981; 
+    --gym-warning: #F59E0B; 
+    --gym-danger: #EF4444; 
+    --gym-info: #0EA5E9; 
+
+    /* Neutrals & Dark Mode */
+    --gym-dark: #2B3674; /* Deep Blue from image */
+    --gym-darker: #1A2035; 
+    --gym-gray-800: #1F2937;
+    --gym-gray-700: #374151;
+    --gym-gray-600: #4B5563;
+    
+    /* Backgrounds */
+    --gym-bg-light: #F4F7FE; /* Light grayish blue from image */
+    --gym-bg-white: #FFFFFF;
+    
+    /* Text */
+    --gym-text-dark: #2B3674; /* Deep blue text */
+    --gym-text-muted: #A3AED0; /* Soft muted text */
+    --gym-text-light: #FFFFFF;
+
+    /* New Gradients for Top Cards */
+    --grad-purple: linear-gradient(to right, #8B5CF6, #6D28D9);
+    --grad-pink: linear-gradient(to right, #EC4899, #BE185D);
+    --grad-orange: linear-gradient(to right, #F97316, #D97706);
+    --grad-teal: linear-gradient(to right, #14B8A6, #0D9488);
+    --shadow-soft: 0 10px 20px rgba(0,0,0,0.03);
+}
+
+body {
+    background-color: var(--gym-bg-light) !important;
+    font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gym-text-dark);
+}
+
+/* =========================================================================
+   OVERRIDING BOOTSTRAP UTILITIES 
+   ========================================================================= */
+
+/* Backgrounds */
+.bg-primary { background-color: var(--gym-primary) !important; }
+.bg-secondary { background-color: var(--gym-gray-600) !important; }
+.bg-success { background-color: var(--gym-success) !important; }
+.bg-warning { background-color: var(--gym-warning) !important; }
+.bg-danger { background-color: var(--gym-danger) !important; }
+.bg-info { background-color: var(--gym-info) !important; }
+.bg-dark { background-color: var(--gym-dark) !important; }
+
+/* Text Colors */
+.text-primary { color: var(--gym-primary) !important; }
+.text-secondary { color: var(--gym-text-muted) !important; }
+.text-success { color: var(--gym-success) !important; }
+.text-warning { color: var(--gym-warning) !important; }
+.text-danger { color: var(--gym-danger) !important; }
+.text-info { color: var(--gym-info) !important; }
+.text-dark { color: var(--gym-text-dark) !important; }
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--gym-primary) !important;
+    border-color: var(--gym-primary) !important;
+    color: var(--gym-text-light) !important;
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2), 0 2px 4px -1px rgba(249, 115, 22, 0.1);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--gym-primary-hover) !important;
+    border-color: var(--gym-primary-hover) !important;
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--gym-primary) !important;
+    border-color: var(--gym-primary) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--gym-primary) !important;
+    color: var(--gym-text-light) !important;
+}
+
+.btn-dark {
+    background-color: var(--gym-dark) !important;
+    border-color: var(--gym-dark) !important;
+}
+.btn-dark:hover {
+    background-color: var(--gym-darker) !important;
+}
+
+/* Base Buttons */
+.btn {
+    font-weight: 600;
+    border-radius: 8px; /* Slightly more rounded buttons */
+    transition: all 0.2s ease-in-out;
+}
+
+/* =========================================================================
+   CARDS & DASHBOARD COMPONENTS
+   ========================================================================= */
+
+.card {
+    border: none !important;
+    border-radius: 20px !important; /* Image has very rounded corners */
+    box-shadow: var(--shadow-soft) !important;
+    background-color: var(--gym-bg-white);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-header {
+    background-color: transparent !important;
+    border-bottom: none !important; /* Image headers don't have lines */
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+}
+
+.card-body {
+    padding: 1.5rem !important;
+}
+
+/* =========================================================================
+   TABLES
+   ========================================================================= */
+
+.table-custom, .table-data {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.table-custom thead th, .table-data thead th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    background-color: var(--gym-bg-light) !important;
+    color: var(--gym-text-muted) !important;
+    border-bottom: 2px solid #E5E7EB !important;
+    border-top: none !important;
+    padding: 1rem;
+    font-weight: 700;
+}
+
+.table-custom tbody td, .table-data tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #F3F4F6;
+    color: var(--gym-text-dark);
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--gym-primary-light) !important; /* Soft orange hover */
+}
+
+/* Table overrides for dark headers if used */
+.table-dark th {
+    background-color: var(--gym-dark) !important;
+    color: var(--gym-text-light) !important;
+    border-color: var(--gym-gray-700) !important;
+}
+
+/* =========================================================================
+   SIDEBAR & NAVBAR SPECIFICS (To replace inline styles)
+   ========================================================================= */
+
+#sidebar-wrapper {
+    background: var(--gym-bg-white) !important; /* Light sidebar */
+    box-shadow: 5px 0 20px rgba(0,0,0,0.02);
+    border-right: none;
+    padding-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Scrollable navigation area inside sidebar */
+#sidebar-nav-scroll {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-bottom: 1rem;
+}
+
+/* Custom thin scrollbar for sidebar */
+#sidebar-nav-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+#sidebar-nav-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+#sidebar-nav-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--gym-primary-light);
+    border-radius: 10px;
+}
+#sidebar-nav-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: var(--gym-primary);
+}
+
+#sidebar-wrapper .sidebar-heading {
+    background-color: var(--gym-bg-white) !important;
+    color: var(--gym-text-dark) !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+#sidebar-wrapper .list-group-item {
+    background-color: transparent !important;
+    color: var(--gym-text-muted) !important; 
+    font-weight: 500;
+    border: none !important;
+    margin: 0.2rem 1rem !important;
+    border-radius: 12px !important;
+    padding: 0.8rem 1rem;
+    display: flex;
+    align-items: center;
+}
+
+#sidebar-wrapper .list-group-item i {
+    color: var(--gym-text-muted) !important; 
+    transition: color 0.2s;
+    font-size: 1.1rem;
+    margin-right: 12px;
+}
+
+#sidebar-wrapper .list-group-item:hover {
+    background-color: var(--gym-bg-light) !important;
+    color: var(--gym-primary) !important;
+}
+
+#sidebar-wrapper .list-group-item:hover i {
+    color: var(--gym-primary) !important;
+}
+
+#sidebar-wrapper .list-group-item.active {
+    background-color: var(--gym-bg-white) !important; 
+    color: var(--gym-primary) !important;
+    font-weight: 600 !important;
+    position: relative;
+}
+
+/* Red dot for active item like in image */
+#sidebar-wrapper .list-group-item.active::after {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: var(--gym-primary);
+    border-radius: 50%;
+}
+
+#sidebar-wrapper .list-group-item.active i {
+    color: var(--gym-primary) !important;
+}
+
+/* Badges */
+.badge {
+    padding: 0.4em 0.8em;
+    font-weight: 600;
+    border-radius: 6px;
+}
+.badge-soft-primary {
+    background-color: var(--gym-primary-light) !important;
+    color: var(--gym-primary-hover) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+.badge-soft-success {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    color: var(--gym-success) !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+.badge-soft-danger {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: var(--gym-danger) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+.badge-soft-warning {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: var(--gym-warning) !important;
+    border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+/* DataTables pagination active color override */
+.page-item.active .page-link {
+    background-color: var(--gym-primary) !important;
+    border-color: var(--gym-primary) !important;
+}
+
+/* =========================================================================
+   GLOBAL MODULE CONTAINER
+   ========================================================================= */
+
+.module-container {
+    background: var(--gym-bg-white);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: none;
+}
+
+/* =========================================================================
+   DATATABLES GLOBAL THEME OVERRIDES
+   ========================================================================= */
+
+/* Pagination container styling */
+.dataTables_wrapper .dataTables_paginate .pagination {
+    background: white;
+    padding: 5px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    display: inline-flex;
+    gap: 5px;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item .page-link {
+    border: none;
+    border-radius: 8px !important;
+    color: var(--gym-text-muted);
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item:not(.active):hover .page-link {
+    background: var(--gym-bg-light);
+    color: var(--gym-primary);
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+    background: var(--gym-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(99,102,241,0.2) !important;
+}
+
+/* Search bar styling */
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    padding: 0.4rem 1rem;
+    color: var(--gym-text-dark);
+    margin-left: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--gym-primary);
+    box-shadow: 0 0 0 0.2rem rgba(99,102,241,0.1);
+    outline: none;
+}
+
+/* Length styling */
+.dataTables_wrapper .dataTables_length select {
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    padding: 0.3rem 0.6rem;
+    color: var(--gym-text-dark);
+}
+
+/* Empty data padding */
+.dataTables_empty {
+    padding: 2rem !important;
+    color: var(--gym-text-muted);
+}

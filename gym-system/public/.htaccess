@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    Options -Multiviews
+    RewriteEngine On
+    
+    # Si el archivo o carpeta solicitada NO existe físicamente...
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # ...entonces redirige todo a index.php pasando la url como parámetro
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>

@@ -1,0 +1,69 @@
+---
+description: Reglas maestras de migración Gym System PHP → NestJS + Flutter
+alwaysApply: true
+---
+
+# Migración Gym System — Reglas del Proyecto
+
+## Contexto
+
+Migrar el sistema PHP MVC de administración de gimnasio (`gym-system/`) hacia:
+- **Backend**: NestJS (lógica de negocio centralizada)
+- **Frontend**: Flutter (solo consumidor de API)
+- **Legacy**: PHP como referencia temporal
+- **Futuro**: IA con Gemini vía NestJS, WebSockets para chat/notificaciones
+
+Módulos actuales: usuarios, roles, socios, planes, suscripciones, asistencias, inventario, productos, POS, caja, reportes, progreso físico, rutinas, carnets QR, facturación SRI Ecuador.
+
+## Regla principal
+
+**No romper funcionalidad existente.** Antes de modificar, eliminar, mover o reemplazar cualquier archivo: analizar su propósito, documentar su función y confirmar dependencias. Migración por fases, controlada, documentada, probada y reversible.
+
+## Orden obligatorio de trabajo
+
+1. Analizar → 2. Documentar → 3. Proponer → 4. Implementar → 5. Comentar → 6. Probar → 7. Documentar resultados → 8. **Esperar aprobación antes de avanzar de fase**
+
+Nunca programar sin entender primero el módulo PHP actual.
+
+## Primera instrucción al iniciar
+
+Ejecutar **solo FASE 00: Diagnóstico completo del sistema PHP**. No crear NestJS, Flutter ni modificar funcionalidades. Al terminar, esperar aprobación.
+
+## Fases (no saltar)
+
+`00` Diagnóstico PHP → `01` Backend base → `02` Auth/usuarios/roles → `03` Socios/membresías → `04` Asistencias/QR → `05` Progreso/rutinas → `06` Inventario → `07` POS/caja → `08` Reportes → `09` SRI → `10` Flutter → `11` IA/WebSockets → `12` Cierre
+
+Cada fase requiere: documentación, pruebas, checklist, bitácora y estado final antes de avanzar.
+
+## Prohibiciones estrictas
+
+- No eliminar funcionalidades PHP sin justificación
+- No mezclar lógica de negocio en Flutter ni reglas críticas en frontend
+- No quemar credenciales; no `root` ni contraseñas vacías en producción
+- No endpoints sin validación ni Swagger
+- No controladores con lógica excesiva
+- No modificar BD sin migración documentada ni cambiar nombres de tablas/columnas sin plan
+- No eliminar datos reales ni migraciones destructivas sin respaldo
+- No avanzar de fase sin pruebas
+- No código improvisado, duplicado ni errores ocultos
+- No stock negativo, ventas sin caja abierta, asistencia sin membresía válida
+- No acceso sin autenticación a datos sensibles
+- No exponer API Keys (Gemini, SRI, WhatsApp) en Flutter ni conexión directa Flutter→Gemini
+
+## Documentación obligatoria
+
+Mantener `docs/` con: `00-diagnostico-sistema-php.md`, `01-mapa-funcionalidades-actuales.md`, `02-mapa-base-datos-actual.md`, `03-arquitectura-objetivo-nestjs-flutter.md`, `04-plan-migracion-fases.md`, `05-bitacora-migracion.md`, `06-checklist-pruebas.md`, `07-endpoints-api.md`, `08-guia-instalacion-backend.md`, `09-guia-instalacion-flutter.md`, `10-decisiones-tecnicas.md`, `11-riesgos-y-rollback.md`, `12-manual-funcionalidades.md` y `docs/fases/fase-00` a `fase-12`.
+
+Actualizar siempre `docs/05-bitacora-migracion.md` con: Fecha, Fase, Archivos analizados/modificados, Funcionalidades, Cambios, Problemas, Soluciones, Pruebas, Resultado, Rollback, Próximo paso.
+
+## Aprobación por fase
+
+Al terminar cada fase, entregar resumen con: qué se hizo, archivos creados/modificados, pruebas, botones probados, riesgos, recomendación (avanzar/no avanzar) y **solicitar aprobación**. No avanzar automáticamente.
+
+## Commits
+
+Formato: `fase-XX: descripción`, `docs:`, `test:`, `fix:`. Commits pequeños y claros.
+
+## README
+
+Mantener `README.md`, `backend-nest/README.md`, `frontend-flutter/README.md` con descripción, requisitos, instalación, env, comandos, estructura, pruebas y estado.

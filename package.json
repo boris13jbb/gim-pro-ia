@@ -1,0 +1,17 @@
+{
+  "name": "gim-pro-ia",
+  "private": true,
+  "description": "Monorepo migración Gym System — scripts de conveniencia desde la raíz",
+  "scripts": {
+    "backend:build": "npm --prefix backend-nest run build",
+    "backend:start:dev": "npm --prefix backend-nest run start:dev",
+    "audit:phase-02": "npm --prefix backend-nest run audit:phase-02",
+    "audit:phase-03": "npm --prefix backend-nest run audit:phase-03",
+    "audit:phase-04": "npm --prefix backend-nest run audit:phase-04",
+    "audit:phase-05": "npm --prefix backend-nest run audit:phase-05",
+    "audit:phase-06": "npm --prefix backend-nest run audit:phase-06",
+    "audit:phase-07": "npm --prefix backend-nest run audit:phase-07",
+    "audit:phase-08": "npm --prefix backend-nest run audit:phase-08",
+    "audit:phase-09": "npm --prefix backend-nest run audit:phase-09"
+  }
+}
