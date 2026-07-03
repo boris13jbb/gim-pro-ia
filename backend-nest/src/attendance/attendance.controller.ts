@@ -43,6 +43,24 @@ export class AttendanceController {
     return this.attendanceService.listToday();
   }
 
+  @Get('me')
+  @Roles('socio')
+  @ApiOperation({
+    summary: 'Socio: historial de asistencias propias en un período',
+  })
+  getMyAttendance(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: ListAttendanceReportQueryDto,
+  ) {
+    if (!user.memberId || user.memberId !== user.sub) {
+      throw new ForbiddenException('Token de socio inválido');
+    }
+    return this.attendanceService.getReport({
+      ...query,
+      memberId: user.memberId,
+    });
+  }
+
   @Get('report')
   @Roles('admin', 'recepcionista', 'entrenador')
   @ApiOperation({ summary: 'Reporte de asistencias por rango de fechas' })

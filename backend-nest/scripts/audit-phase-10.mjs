@@ -179,6 +179,27 @@ async function main() {
       : fail('GET /workout-routines/me/current', workout.status),
   );
 
+  const attendanceMe = await req('/attendance/me', {
+    headers: authHeader(memberToken),
+  });
+  results.push(
+    attendanceMe.status === 200 &&
+      Array.isArray(attendanceMe.body?.data?.items)
+      ? ok('GET /attendance/me', attendanceMe.body.data.totalVisits ?? 0)
+      : fail('GET /attendance/me', attendanceMe.status),
+  );
+
+  const selfAttendance = await req('/attendance/self', {
+    method: 'POST',
+    headers: authHeader(memberToken),
+    body: JSON.stringify({}),
+  });
+  results.push(
+    selfAttendance.status === 201 || selfAttendance.status === 409
+      ? ok('POST /attendance/self', selfAttendance.status)
+      : fail('POST /attendance/self', selfAttendance.status),
+  );
+
   const staffOnMember = await req('/members/me/membership', {
     headers: authHeader(adminToken),
   });

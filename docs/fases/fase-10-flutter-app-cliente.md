@@ -1,10 +1,10 @@
 ﻿# Fase 10 — Flutter app cliente (socio)
 
-**Estado:** Slice 1 implementado — pendiente aprobación
+**Estado:** Slice 1 + 2 implementados — pendiente aprobación
 
 ## Objetivo de la fase
 
-App Flutter para socios: login JWT, perfil, membresía, carnet QR, progreso físico, rutina y registro de asistencia. Solo consume API NestJS; sin lógica de negocio en cliente.
+App Flutter para socios: login JWT, perfil, membresía, carnet QR, progreso físico, rutina, asistencias e historial. Solo consume API NestJS; sin lógica de negocio en cliente.
 
 ## Archivos PHP analizados
 
@@ -20,33 +20,40 @@ Lectura vía API: `socios`, `suscripciones`, `planes`, `medidas`, `rutinas`, `as
 - Membresía y acceso calculados en NestJS; Flutter solo muestra
 - QR del carnet = DNI del socio (paridad PHP)
 - Asistencia propia solo con membresía vigente (`POST /attendance/self`)
+- Historial de asistencias del mes (`GET /attendance/me`)
 - Tokens en almacenamiento seguro; refresh automático en 401
 
-## Nuevos módulos NestJS creados (complemento Fase 10)
+## Módulos NestJS (complemento Fase 10)
 
 | Archivo | Descripción |
 |---------|-------------|
 | `members/member-self.controller.ts` | `GET /members/me/membership`, `GET /members/me/memberships` |
 | `qr-access.controller.ts` | `GET /qr-access/me/card` (socio) |
+| `attendance.controller.ts` | `GET /attendance/me`, `POST /attendance/self` |
+| `main.ts` | Escucha en `0.0.0.0` para acceso LAN desde dispositivo físico |
 
-## Nuevas pantallas o funcionalidades Flutter
+## Pantallas Flutter
 
 | Pantalla | Ruta | API |
 |----------|------|-----|
 | Login | `/login` | `POST /auth/member/login` |
-| Inicio + membresía + asistencia | `/home` | `GET /members/me/membership`, `POST /attendance/self` |
+| Inicio + membresía + asistencia + resumen mes | `/home` | `GET /members/me/membership`, `GET /attendance/me`, `POST /attendance/self` |
 | Carnet QR | `/qr` | `GET /qr-access/me/card` |
 | Progreso físico | `/progress` | `GET /body-progress/me` |
 | Rutina | `/workout` | `GET /workout-routines/me/current` |
-| Perfil + logout | `/profile` | `GET /auth/me`, `POST /auth/logout` |
+| Perfil + historial membresías + logout | `/profile` | `GET /auth/me`, `GET /members/me/memberships`, `POST /auth/logout` |
 
-## Endpoints creados (backend complemento)
+## Endpoints backend (socio)
 
 | Método | Ruta | Rol |
 |--------|------|-----|
 | GET | `/api/members/me/membership` | socio |
 | GET | `/api/members/me/memberships` | socio |
 | GET | `/api/qr-access/me/card` | socio |
+| GET | `/api/attendance/me` | socio |
+| POST | `/api/attendance/self` | socio |
+| GET | `/api/body-progress/me` | socio |
+| GET | `/api/workout-routines/me/current` | socio |
 
 ## Cambios de base de datos
 
@@ -57,42 +64,39 @@ Ninguno.
 | Prueba | Resultado |
 |--------|-----------|
 | `npm run build` (backend) | OK |
-| `npm run audit:phase-10` | 11/11 OK |
+| `npm run audit:phase-10` | **13/13 OK** |
 | `flutter analyze` | OK (solo info/warnings menores) |
 | `flutter test` | 1/1 OK |
 
-## Botones probados
+## Slice 2 — mejoras
 
-| Pantalla | Acción | Estado |
-|----------|--------|--------|
-| Login | Iniciar sesión | Pendiente prueba manual UI |
-| Inicio | Registrar asistencia | Pendiente prueba manual UI |
-| Perfil | Cerrar sesión | Pendiente prueba manual UI |
-| Navegación inferior | 5 tabs | Pendiente prueba manual UI |
+- Resumen de asistencias del mes en pantalla Inicio
+- Historial de membresías en Perfil
+- `GET /attendance/me` en backend
+- API escucha en `0.0.0.0` para red local (dispositivo físico)
+- Mensajes de error de conexión con hint de `API_BASE_URL`
 
-## Errores encontrados
+## Ejecución en dispositivo físico
 
-- Endpoints de membresía y carnet QR no existían para rol `socio` → creados en slice 1
+```bash
+cd frontend-flutter
+flutter run --dart-define=API_BASE_URL=http://IP_DE_TU_PC:3000/api
+```
 
-## Soluciones aplicadas
+Backend debe estar activo (`npm run start:dev`) en la misma red.
 
-- `MemberSelfController` con rutas `me/*` antes del controller staff
-- `GET /qr-access/me/card` con `memberId` desde JWT
-- App Flutter con Provider + go_router + dio + flutter_secure_storage
+## Pendientes (slice 3+)
 
-## Pendientes (slice 2+)
-
-- UI staff/admin en Flutter (opcional, fases posteriores)
 - Push notifications
 - Modo offline / caché
-- Pruebas widget/integration más amplias
 - Icono y splash personalizados
+- UI staff/admin (fases posteriores)
 
 ## Cómo hacer rollback
 
-- Backend: eliminar `member-self.controller.ts` y ruta `me/card` en qr-access
+- Backend: revertir `GET attendance/me` y `0.0.0.0` en main.ts
 - Flutter: eliminar carpeta `frontend-flutter/`
 
 ## Estado final de la fase
 
-**Slice 1 completado** — app socio funcional contra API local. Requiere aprobación del usuario para cerrar Fase 10 o continuar slice 2.
+**Slice 1 + 2 completados** — app socio funcional en red local. Requiere aprobación para cerrar Fase 10 o continuar slice 3.

@@ -261,6 +261,11 @@ npm run audit:phase-09
 | 10 | Flutter | Test widget | `flutter test` | 1/1 | 1/1 | OK |
 | 10 | Flutter | Login UI | Pantalla login | navega a home | OK (Chrome) | OK |
 | 10 | Flutter | CORS web :8080 | Login desde Chrome | 201 | corregido CORS | OK |
+| 10 | API | GET asistencias propias | GET `/attendance/me` | 200 + items | OK | OK |
+| 10 | API | POST asistencia propia | POST `/attendance/self` | 201 o 409 | 201 | OK |
+| 10 | Flutter | Inicio resumen asistencias | Tab Inicio | visitas del mes | slice 2 | OK |
+| 10 | Flutter | Historial membresías | Tab Perfil | lista planes | slice 2 | OK |
+| 10 | Flutter | Dispositivo físico LAN | `API_BASE_URL=IP:3000` | conecta API | OK | OK |
 | 10 | Flutter | Carnet QR | Tab Carnet | muestra QR | Pendiente manual | Pendiente |
 | 10 | Flutter | Registrar asistencia | Botón inicio | 201 o 409 | Pendiente manual | Pendiente |
 
@@ -271,4 +276,4 @@ cd backend-nest
 npm run audit:phase-10
 ```
 
-Última ejecución: **11/11 OK** (`npm run audit:phase-10`).
+Última ejecución: **13/13 OK** (`npm run audit:phase-10`).

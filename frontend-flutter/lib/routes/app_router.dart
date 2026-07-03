@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../features/attendance/attendance_history_page.dart';
 import '../features/auth/login_page.dart';
 import '../features/body_progress/body_progress_page.dart';
 import '../features/home/home_page.dart';
@@ -81,6 +82,10 @@ GoRouter createAppRouter(AuthProvider authProvider) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/attendance-history',
+        builder: (context, state) => const AttendanceHistoryPage(),
       ),
     ],
   );

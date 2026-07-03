@@ -1017,6 +1017,38 @@ Sincronización `backend-nest/.env` con SMTP Gmail y variables SRI. Sanitizació
 
 ---
 
+## 2026-07-02 — Fase 10 slice 2: asistencias socio + UI Flutter
+
+### Cambio realizado
+`GET /attendance/me` para historial del socio; API en `0.0.0.0` para LAN; Flutter con resumen de asistencias en Inicio e historial de membresías en Perfil.
+
+### Archivos modificados
+- `backend-nest/src/attendance/attendance.controller.ts`
+- `backend-nest/src/main.ts`
+- `backend-nest/scripts/audit-phase-10.mjs`
+- `frontend-flutter/lib/features/home/home_page.dart`
+- `frontend-flutter/lib/features/profile/profile_page.dart`
+- `frontend-flutter/lib/services/attendance_service.dart`
+- `frontend-flutter/lib/services/api_client.dart`
+- `docs/fases/fase-10-flutter-app-cliente.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/05-bitacora-migracion.md`
+
+### Archivos creados
+- `frontend-flutter/lib/core/models/attendance_report.dart`
+
+### Pruebas realizadas
+- `npm run audit:phase-10` → **13/13 OK**
+- `flutter analyze` + `flutter test` OK
+
+### Resultado
+Pendiente de aprobación — slice 2 operativo.
+
+### Próximo paso
+Prueba manual en dispositivo + aprobación Fase 10 o slice 3 (push/offline).
+
+---
+
 ## 2026-07-02 — Auditoría técnica integral backend + correcciones
 
 ### Cambio realizado

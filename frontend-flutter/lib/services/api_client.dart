@@ -112,7 +112,8 @@ class ApiClient {
             'Verifique que el backend esté activo en :3000 y que CORS incluya '
             'el puerto de Flutter web (ej. http://localhost:8080).';
       }
-      return 'No se pudo conectar con el servidor. Verifique la API y la red.';
+      return 'No se pudo conectar con ${ApiConfig.baseUrl}. '
+          'En dispositivo físico use: flutter run --dart-define=API_BASE_URL=http://IP_PC:3000/api';
     }
     return error.message ?? 'Error de red';
   }

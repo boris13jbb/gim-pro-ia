@@ -372,6 +372,22 @@ Socio registra su propia asistencia desde la app.
 
 ---
 
+## GET /attendance/me
+
+### Descripción
+Historial de asistencias del socio autenticado en un período (default: mes actual).
+
+### Query
+`from`, `to` (YYYY-MM-DD, opcionales)
+
+### Respuesta
+`totalVisits`, `averageDaily`, `items[]` con `checkedInAt`, `method`
+
+### Rol permitido
+`socio`
+
+---
+
 ## GET /attendance/today
 
 ### Descripción
