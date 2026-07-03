@@ -23,6 +23,7 @@ import { CashRegistersModule } from './cash-registers/cash-registers.module';
 import { SalesModule } from './sales/sales.module';
 import { ReportsModule } from './reports/reports.module';
 import { BillingSriModule } from './billing-sri/billing-sri.module';
+import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { JwtAccessGuard } from './auth/guards/jwt-access.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { getThrottleConfig } from './config/throttle.config';
@@ -58,6 +59,7 @@ const throttleConfig = getThrottleConfig();
     SalesModule,
     ReportsModule,
     BillingSriModule,
+    AiAssistantModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

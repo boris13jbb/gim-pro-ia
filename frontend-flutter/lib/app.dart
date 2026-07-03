@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'routes/app_router.dart';
+import 'services/ai_service.dart';
 import 'services/api_client.dart';
 import 'services/attendance_service.dart';
 import 'services/auth_service.dart';
@@ -63,6 +64,9 @@ class _GymProAppState extends State<GymProApp> {
         ),
         Provider<AttendanceService>(
           create: (_) => AttendanceService(apiClient: _apiClient),
+        ),
+        Provider<AiService>(
+          create: (_) => AiService(apiClient: _apiClient),
         ),
       ],
       child: AppBootstrap(

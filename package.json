@@ -12,6 +12,8 @@
     "audit:phase-06": "npm --prefix backend-nest run audit:phase-06",
     "audit:phase-07": "npm --prefix backend-nest run audit:phase-07",
     "audit:phase-08": "npm --prefix backend-nest run audit:phase-08",
-    "audit:phase-09": "npm --prefix backend-nest run audit:phase-09"
+    "audit:phase-09": "npm --prefix backend-nest run audit:phase-09",
+    "audit:phase-10": "npm --prefix backend-nest run audit:phase-10",
+    "audit:phase-11": "npm --prefix backend-nest run audit:phase-11"
   }
 }

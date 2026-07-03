@@ -277,3 +277,27 @@ npm run audit:phase-10
 ```
 
 Última ejecución: **13/13 OK** (`npm run audit:phase-10`).
+
+**Estado Fase 10:** Aprobada (2026-07-03).
+
+## Fase 11 — IA + Gemini (slice 1 REST)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 11 | API | Staff bloqueado IA | GET `/ai/conversations` admin | 403 | 403 | OK |
+| 11 | API | Lista conversaciones socio | GET `/ai/conversations` | 200 array | 0 | OK |
+| 11 | API | Chat sin GEMINI_API_KEY | POST `/ai/chat` | 503 | 503 | OK |
+| 11 | API | Chat con Gemini | POST `/ai/chat` | 200 + reply | Pendiente con API key | Pendiente |
+| 11 | Flutter | Tab Asistente | Navegación | pantalla chat | Implementado | Pendiente manual |
+| 11 | Flutter | Enviar mensaje | Botón enviar | respuesta IA | Requiere GEMINI_API_KEY | Pendiente |
+| 11 | Flutter | Análisis | `flutter analyze` | sin errores | OK | OK |
+| 11 | Flutter | Test widget | `flutter test` | 1/1 | 1/1 | OK |
+
+### Script de auditoría Fase 11 (API)
+
+```bash
+cd backend-nest
+npm run audit:phase-11
+```
+
+Última ejecución: **6/6 OK** (`npm run audit:phase-11`, sin `GEMINI_API_KEY`).

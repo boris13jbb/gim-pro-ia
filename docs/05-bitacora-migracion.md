@@ -1049,6 +1049,33 @@ Prueba manual en dispositivo + aprobación Fase 10 o slice 3 (push/offline).
 
 ---
 
+## 2026-07-03 — Fase 10 slice 3: historial asistencias + AppBar
+
+### Cambio realizado
+Pantalla historial completo de asistencias, AppBar por tab, enlace desde Inicio y URL API visible en login.
+
+### Archivos creados
+- `frontend-flutter/lib/features/attendance/attendance_history_page.dart`
+
+### Archivos modificados
+- `frontend-flutter/lib/features/shell/app_shell.dart`
+- `frontend-flutter/lib/features/home/home_page.dart`
+- `frontend-flutter/lib/features/auth/login_page.dart`
+- `frontend-flutter/lib/routes/app_router.dart`
+- `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Pruebas realizadas
+- `flutter analyze` OK
+- `flutter test` 1/1 OK
+
+### Resultado
+Pendiente de aprobación — Fase 10 casi cerrada.
+
+### Próximo paso
+Aprobación Fase 10 → Fase 11 IA/WebSockets.
+
+---
+
 ## 2026-07-02 — Auditoría técnica integral backend + correcciones
 
 ### Cambio realizado
@@ -1170,3 +1197,79 @@ Eliminar `frontend-flutter/` y revertir `member-self.controller.ts` + ruta qr `m
 
 ### Próximo paso
 Prueba manual Flutter + aprobación slice 1; slice 2 (notificaciones, polish UI) según decisión.
+
+---
+
+## 2026-07-03 — Fase 10 cerrada (aprobación usuario)
+
+### Cambio realizado
+Usuario aprobó Fase 10 ("está correcto continua"). Estado documental actualizado a **Aprobada**.
+
+### Resultado
+Aprobado — avance a Fase 11.
+
+### Próximo paso
+Fase 11 slice 1: asistente IA REST + chat Flutter.
+
+---
+
+## 2026-07-03 — Fase 11 slice 1: Asistente IA REST + chat Flutter
+
+### Cambio realizado
+Módulo `ai-assistant` en NestJS con Gemini (`@google/generative-ai`), herramientas internas de contexto del socio, persistencia `ai_conversations`/`ai_messages`, endpoints `GET/POST /ai/*`. Flutter: 6ª pestaña Asistente con `AiChatPage` y `AiService`. Auditoría `audit:phase-11`.
+
+### Archivos modificados
+- `backend-nest/prisma/schema.prisma`
+- `backend-nest/src/app.module.ts`
+- `backend-nest/package.json`
+- `backend-nest/.env.example`
+- `package.json` (raíz)
+- `frontend-flutter/lib/app.dart`
+- `frontend-flutter/lib/routes/app_router.dart`
+- `frontend-flutter/lib/features/shell/app_shell.dart`
+- `docs/fases/fase-10-flutter-app-cliente.md`
+- `docs/fases/fase-11-ia-websockets-gemini.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/07-endpoints-api.md`
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/*` (módulo completo)
+- `backend-nest/scripts/audit-phase-11.mjs`
+- `frontend-flutter/lib/features/ai/ai_chat_page.dart`
+- `frontend-flutter/lib/services/ai_service.dart`
+
+### Funcionalidad afectada
+Asistente IA para socios; nueva pestaña en app Flutter.
+
+### Código reutilizado
+`MembersService`, `AttendanceService`, `BodyProgressService`, `WorkoutRoutinesService`, guards JWT/roles, `ApiClient`.
+
+### Duplicados revisados
+Sin duplicación de consultas de negocio; contexto consolidado en `AiToolsService`.
+
+### Optimizaciones realizadas
+Contexto del socio en un solo `buildMemberContext`; límite diario y throttle configurables.
+
+### Comentarios agregados en el código
+Reglas de seguridad en controller, tools y `GeminiService` (flujo Flutter→NestJS→Gemini).
+
+### Pruebas realizadas
+- `npm run db:push` OK
+- `npm run build` OK
+- `npm run audit:phase-11` → **6/6 OK**
+- `flutter analyze` OK
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 1 operativo; requiere `GEMINI_API_KEY` para respuestas reales.
+
+### Riesgos detectados
+- Sin API key Gemini el chat responde 503 (comportamiento esperado)
+- WebSockets y streaming pendientes (slice 2)
+- Costo/uso de API Gemini según volumen de mensajes
+
+### Rollback
+Eliminar módulo `ai-assistant`, tablas AI y pestaña Flutter; revertir schema Prisma.
+
+### Próximo paso
+Configurar `GEMINI_API_KEY`, prueba manual chat; slice 2 WebSockets tras aprobación.

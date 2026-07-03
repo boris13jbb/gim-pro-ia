@@ -11,6 +11,7 @@ class AppShell extends StatelessWidget {
     'Carnet QR',
     'Progreso',
     'Rutina',
+    'Asistente',
     'Perfil',
   ];
 
@@ -46,6 +47,11 @@ class AppShell extends StatelessWidget {
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center),
             label: 'Rutina',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.smart_toy_outlined),
+            selectedIcon: Icon(Icons.smart_toy),
+            label: 'Asistente',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

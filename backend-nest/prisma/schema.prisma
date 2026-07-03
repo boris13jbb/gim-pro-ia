@@ -277,6 +277,7 @@ model socios {
   suscripciones    suscripciones[]
   ventas           ventas[]
   refreshTokens    auth_refresh_tokens[]
+  ai_conversations ai_conversations[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -498,4 +499,35 @@ enum comprobantes_electronicos_estado_sunat {
   observado
   enviando
   error
+}
+
+/// Conversaciones del asistente IA por socio (Fase 11).
+model ai_conversations {
+  id             Int           @id @default(autoincrement())
+  member_id      Int
+  titulo         String?       @db.VarChar(120)
+  creado_en      DateTime      @default(now()) @db.DateTime(0)
+  actualizado_en DateTime      @updatedAt @db.DateTime(0)
+  socios         socios        @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_conv_socio")
+  ai_messages    ai_messages[]
+
+  @@index([member_id], map: "idx_ai_conv_member")
+}
+
+model ai_messages {
+  id               Int              @id @default(autoincrement())
+  conversation_id  Int
+  role             ai_message_role
+  content          String           @db.Text
+  metadata         Json?
+  creado_en        DateTime         @default(now()) @db.DateTime(0)
+  ai_conversations ai_conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_msg_conv")
+
+  @@index([conversation_id], map: "idx_ai_msg_conv")
+}
+
+enum ai_message_role {
+  user
+  assistant
+  system
 }

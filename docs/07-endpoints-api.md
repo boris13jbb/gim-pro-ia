@@ -1067,4 +1067,109 @@ Envía por correo el RIDE (PDF) y el XML al cliente. Requiere SMTP configurado e
 
 ---
 
+## Fase 11 — Asistente IA (socio)
+
+### Flujo obligatorio
+
+```text
+Flutter → NestJS (/api/ai/chat) → Gemini → AiToolsService → BD
+```
+
+La API key de Gemini **nunca** va en Flutter.
+
+---
+
+## GET /ai/conversations
+
+### Descripción
+Lista conversaciones del socio autenticado (más recientes primero).
+
+### Rol permitido
+`socio`
+
+### Respuesta exitosa
+```json
+{
+  "ok": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "¿Cómo está mi membresía?",
+      "createdAt": "2026-07-03T06:00:00.000Z",
+      "updatedAt": "2026-07-03T06:01:00.000Z",
+      "lastMessage": {
+        "role": "assistant",
+        "content": "...",
+        "createdAt": "2026-07-03T06:01:00.000Z"
+      }
+    }
+  ]
+}
+```
+
+### Errores
+- `401` — Sin token o token inválido
+- `403` — No es socio o token de socio inválido
+
+---
+
+## GET /ai/conversations/:id
+
+### Descripción
+Detalle de una conversación con todos los mensajes.
+
+### Rol permitido
+`socio` (solo conversaciones propias)
+
+### Errores
+- `403` — Conversación de otro socio
+- `404` — Conversación no encontrada
+
+---
+
+## POST /ai/chat
+
+### Descripción
+Envía un mensaje al asistente IA. Crea conversación si no se envía `conversationId`.
+
+### Body
+```json
+{
+  "message": "¿Cuántas veces fui este mes?",
+  "conversationId": 1
+}
+```
+
+### Respuesta exitosa
+```json
+{
+  "ok": true,
+  "data": {
+    "conversationId": 1,
+    "reply": "Según tus registros...",
+    "message": {
+      "id": 4,
+      "role": "assistant",
+      "content": "Según tus registros...",
+      "metadata": { "model": "gemini-2.0-flash", "toolsUsed": ["getMemberProfile", "..."] },
+      "createdAt": "2026-07-03T06:01:00.000Z"
+    }
+  }
+}
+```
+
+### Errores
+- `401` / `403` — Auth
+- `429` — Límite diario (`AI_DAILY_MESSAGE_LIMIT`) o rate limit
+- `503` — `GEMINI_API_KEY` no configurada en servidor
+
+### Rol permitido
+`socio`
+
+---
+
+*Ver `docs/fases/fase-11-ia-websockets-gemini.md` para detalle de la fase.*
+
+---
+
 *Swagger interactivo: `GET /api/docs`*

@@ -1,6 +1,6 @@
 ﻿# Fase 10 — Flutter app cliente (socio)
 
-**Estado:** Slice 1 + 2 implementados — pendiente aprobación
+**Estado:** Aprobada (2026-07-03) — slices 1–3 completados
 
 ## Objetivo de la fase
 
@@ -85,7 +85,14 @@ flutter run --dart-define=API_BASE_URL=http://IP_DE_TU_PC:3000/api
 
 Backend debe estar activo (`npm run start:dev`) en la misma red.
 
-## Pendientes (slice 3+)
+## Slice 3 — UX y navegación
+
+- `AppBar` con título por pestaña en `AppShell`
+- Pantalla `AttendanceHistoryPage` (`/attendance-history`) con historial completo del mes
+- Enlace “Ver historial” desde Inicio
+- Login muestra URL de API activa (útil en web/dispositivo)
+
+## Pendientes (futuro)
 
 - Push notifications
 - Modo offline / caché

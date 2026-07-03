@@ -32,9 +32,11 @@
     "audit:phase-07": "node scripts/audit-phase-07.mjs",
     "audit:phase-08": "node scripts/audit-phase-08.mjs",
     "audit:phase-09": "node scripts/audit-phase-09.mjs",
-    "audit:phase-10": "node scripts/audit-phase-10.mjs"
+    "audit:phase-10": "node scripts/audit-phase-10.mjs",
+    "audit:phase-11": "node scripts/audit-phase-11.mjs"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
