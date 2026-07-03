@@ -78,7 +78,8 @@ export function mapSaleTicket(row: ventas & SaleRelations) {
       discount: sale.discount,
       total: sale.total,
       paymentMethod: sale.paymentMethod,
-      clientDisplayName: sale.memberName ?? sale.clientName ?? 'Cliente general',
+      clientDisplayName:
+        sale.memberName ?? sale.clientName ?? 'Cliente general',
       cashierName: sale.cashierName,
       issuedAt: sale.createdAt,
     },

@@ -9,7 +9,12 @@ import {
   Query,
   StreamableFile,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RawResponse } from '../common/decorators/raw-response.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -78,7 +83,9 @@ export class ElectronicReceiptsController {
   @RawResponse()
   @ApiProduces('application/xml')
   @Header('Content-Type', 'application/xml')
-  @ApiOperation({ summary: 'Descargar XML firmado o autorizado del comprobante' })
+  @ApiOperation({
+    summary: 'Descargar XML firmado o autorizado del comprobante',
+  })
   async downloadXml(@Param('id', ParseIntPipe) id: number) {
     const file = await this.electronicReceiptsService.getXmlDownload(id);
     return new StreamableFile(Buffer.from(file.xml, 'utf8'), {

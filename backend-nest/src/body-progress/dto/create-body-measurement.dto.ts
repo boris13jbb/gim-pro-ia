@@ -1,11 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsDateString,
-  IsNumber,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsDateString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class CreateBodyMeasurementDto {
   @ApiProperty({ example: '2026-07-02' })
@@ -19,7 +14,10 @@ export class CreateBodyMeasurementDto {
   @Min(0)
   weight?: number;
 
-  @ApiPropertyOptional({ example: 18.2, description: 'Porcentaje de grasa corporal' })
+  @ApiPropertyOptional({
+    example: 18.2,
+    description: 'Porcentaje de grasa corporal',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

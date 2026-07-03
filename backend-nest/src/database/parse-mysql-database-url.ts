@@ -10,7 +10,9 @@ export type MysqlConnectionConfig = {
  * Convierte DATABASE_URL (mysql://user:pass@host:port/db) al formato del adapter MariaDB.
  * Prisma v7 ya no lee la URL desde schema.prisma; el adapter necesita parámetros explícitos.
  */
-export function parseMysqlDatabaseUrl(databaseUrl: string): MysqlConnectionConfig {
+export function parseMysqlDatabaseUrl(
+  databaseUrl: string,
+): MysqlConnectionConfig {
   const normalized = databaseUrl.replace(/^mysql:\/\//, 'http://');
   const url = new URL(normalized);
 

@@ -6,7 +6,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../types/jwt-payload.type';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
@@ -16,12 +19,16 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     });
   }
 
-  validate(req: Request, payload: JwtPayload): JwtPayload & { refreshToken: string } {
+  validate(
+    req: Request,
+    payload: JwtPayload,
+  ): JwtPayload & { refreshToken: string } {
     if (payload.type !== 'refresh' || !payload.jti) {
       throw new UnauthorizedException('Refresh token inválido');
     }
 
-    const refreshToken = req.body?.refreshToken as string | undefined;
+    const refreshToken = (req.body as { refreshToken?: string } | undefined)
+      ?.refreshToken;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token requerido');
     }

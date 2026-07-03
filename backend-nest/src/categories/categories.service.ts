@@ -63,7 +63,9 @@ export class CategoriesService {
   async update(id: number, dto: UpdateCategoryDto) {
     await this.findOne(id);
     if (dto.name !== undefined && !dto.name.trim()) {
-      throw new BadRequestException('El nombre de la categoría no puede estar vacío');
+      throw new BadRequestException(
+        'El nombre de la categoría no puede estar vacío',
+      );
     }
 
     return this.prisma.categorias

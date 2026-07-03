@@ -1,7 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDateString, IsInt, IsOptional, Min } from 'class-validator';
-import { firstDayOfCurrentMonth, todayDateString } from '../../common/utils/date.util';
+import {
+  firstDayOfCurrentMonth,
+  todayDateString,
+} from '../../common/utils/date.util';
 
 export class ReportDateRangeQueryDto {
   @ApiPropertyOptional({ example: firstDayOfCurrentMonth() })

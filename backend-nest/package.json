@@ -31,7 +31,8 @@
     "audit:phase-06": "node scripts/audit-phase-06.mjs",
     "audit:phase-07": "node scripts/audit-phase-07.mjs",
     "audit:phase-08": "node scripts/audit-phase-08.mjs",
-    "audit:phase-09": "node scripts/audit-phase-09.mjs"
+    "audit:phase-09": "node scripts/audit-phase-09.mjs",
+    "audit:phase-10": "node scripts/audit-phase-10.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

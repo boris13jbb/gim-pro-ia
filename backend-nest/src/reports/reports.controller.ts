@@ -1,11 +1,10 @@
+import { Controller, Get, Header, Query, StreamableFile } from '@nestjs/common';
 import {
-  Controller,
-  Get,
-  Header,
-  Query,
-  StreamableFile,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RawResponse } from '../common/decorators/raw-response.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ReportDateRangeQueryDto } from './dto/report-date-range-query.dto';

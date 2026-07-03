@@ -20,7 +20,9 @@ import { CreateWorkoutRoutineDto } from './dto/create-workout-routine.dto';
 @ApiBearerAuth()
 @Controller('workout-routines')
 export class WorkoutRoutinesController {
-  constructor(private readonly workoutRoutinesService: WorkoutRoutinesService) {}
+  constructor(
+    private readonly workoutRoutinesService: WorkoutRoutinesService,
+  ) {}
 
   @Get('me/current')
   @Roles('socio')
@@ -55,7 +57,9 @@ export class WorkoutRoutinesController {
   @Post('members/:memberId')
   @HttpCode(HttpStatus.CREATED)
   @Roles('admin', 'entrenador')
-  @ApiOperation({ summary: 'Asignar nueva versión de rutina (INSERT, conserva historial)' })
+  @ApiOperation({
+    summary: 'Asignar nueva versión de rutina (INSERT, conserva historial)',
+  })
   createRoutine(
     @Param('memberId', ParseIntPipe) memberId: number,
     @Body() dto: CreateWorkoutRoutineDto,

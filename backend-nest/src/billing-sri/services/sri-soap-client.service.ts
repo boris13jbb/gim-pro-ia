@@ -33,7 +33,9 @@ export class SriSoapClientService {
     options?: { forceSimulate?: boolean },
   ): Promise<SriSoapResult> {
     if (options?.forceSimulate) {
-      return this.simulateReception('firma o ambiente de pruebas sin certificado');
+      return this.simulateReception(
+        'firma o ambiente de pruebas sin certificado',
+      );
     }
 
     const env = environment === '2' ? '2' : '1';
@@ -131,10 +133,7 @@ export class SriSoapClientService {
       /<comprobante>([\s\S]+?)<\/comprobante>/,
     )?.[1];
     const authorizedXml = authorizedBlock
-      ? authorizedBlock
-          .replace('<![CDATA[', '')
-          .replace(']]>', '')
-          .trim()
+      ? authorizedBlock.replace('<![CDATA[', '').replace(']]>', '').trim()
       : xmlString;
 
     return {
@@ -191,7 +190,10 @@ export class SriSoapClientService {
     };
   }
 
-  private simulateAuthorization(accessKey: string, error: string): SriSoapResult {
+  private simulateAuthorization(
+    accessKey: string,
+    error: string,
+  ): SriSoapResult {
     return {
       ok: true,
       status: 'AUTORIZADO',

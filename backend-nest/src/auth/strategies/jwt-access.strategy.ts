@@ -8,7 +8,10 @@ import { UsersService } from '../../users/users.service';
 import { MembersService } from '../../members/members.service';
 
 @Injectable()
-export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') {
+export class JwtAccessStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-access',
+) {
   constructor(
     config: ConfigService,
     private readonly usersService: UsersService,
@@ -52,7 +55,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
     return {
       sub: user.id,
       email: user.email ?? payload.email,
-      role: (user.rol ?? payload.role) as JwtPayload['role'],
+      role: user.rol ?? payload.role,
       userType: 'staff',
       type: 'access',
     };

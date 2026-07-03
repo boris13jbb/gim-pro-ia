@@ -9,7 +9,9 @@ import { AuthGuard } from '@nestjs/passport';
 export class JwtRefreshGuard extends AuthGuard('jwt-refresh') {
   handleRequest<TUser>(err: Error | null, user: TUser): TUser {
     if (err || !user) {
-      throw err ?? new UnauthorizedException('Refresh token inválido o expirado');
+      throw (
+        err ?? new UnauthorizedException('Refresh token inválido o expirado')
+      );
     }
     return user;
   }

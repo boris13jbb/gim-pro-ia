@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -37,12 +45,10 @@ export class InventoryController {
   @Post('adjustments')
   @Roles('admin')
   @ApiOperation({
-    summary: 'Ajuste manual de stock (sumar/restar). No permite stock negativo.',
+    summary:
+      'Ajuste manual de stock (sumar/restar). No permite stock negativo.',
   })
-  adjustStock(
-    @Body() dto: AdjustStockDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  adjustStock(@Body() dto: AdjustStockDto, @CurrentUser() user: JwtPayload) {
     return this.inventoryService.adjustStock(dto, user.sub);
   }
 }

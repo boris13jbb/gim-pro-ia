@@ -47,7 +47,9 @@ export class PlansService {
         ...(dto.duracionDias !== undefined
           ? { duracion_dias: dto.duracionDias }
           : {}),
-        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
+        ...(dto.descripcion !== undefined
+          ? { descripcion: dto.descripcion }
+          : {}),
       },
     });
   }

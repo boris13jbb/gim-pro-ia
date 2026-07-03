@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { QrAccessService } from './qr-access.service';
 import { ValidateQrAccessDto } from './dto/validate-qr-access.dto';
 
@@ -27,6 +29,16 @@ export class QrAccessController {
   })
   validate(@Body() dto: ValidateQrAccessDto) {
     return this.qrAccessService.validateQrPayload(dto.qrPayload);
+  }
+
+  @Get('me/card')
+  @Roles('socio')
+  @ApiOperation({
+    summary: 'Socio: datos del carnet digital con QR (solo propio)',
+  })
+  getMyCard(@CurrentUser() user: JwtPayload) {
+    const memberId = user.memberId ?? user.sub;
+    return this.qrAccessService.getMemberCardData(memberId);
   }
 
   @Get('members/:id/card')

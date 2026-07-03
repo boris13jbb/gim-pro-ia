@@ -40,7 +40,9 @@ export class CreateMemberDto {
   @IsEnum(socios_estado)
   estado?: socios_estado;
 
-  @ApiPropertyOptional({ description: 'Nombre de archivo foto (sin upload en Fase 03)' })
+  @ApiPropertyOptional({
+    description: 'Nombre de archivo foto (sin upload en Fase 03)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)

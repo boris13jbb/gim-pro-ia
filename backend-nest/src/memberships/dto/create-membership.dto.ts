@@ -1,12 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsDateString,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 import { suscripciones_tipo_comprobante } from '@prisma/client';
 
 export class CreateMembershipDto {

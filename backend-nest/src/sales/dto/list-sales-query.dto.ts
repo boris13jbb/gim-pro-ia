@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class ListSalesQueryDto {
   @ApiPropertyOptional({ example: '2026-07-01' })

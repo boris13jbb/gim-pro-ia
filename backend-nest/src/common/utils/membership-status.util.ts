@@ -1,10 +1,6 @@
 export type MembershipStoredStatus = 'activa' | 'vencida';
 export type MembershipEffectiveStatus =
-  | 'activa'
-  | 'vencida'
-  | 'cancelada'
-  | 'suspendida'
-  | 'sin_membresia';
+  'activa' | 'vencida' | 'cancelada' | 'suspendida' | 'sin_membresia';
 
 export interface MembershipStatusInput {
   estado: MembershipStoredStatus | null | undefined;

@@ -50,7 +50,9 @@ export class SriRideExportService {
     const documentLabel = getSriDocumentTypeLabel(receipt.tipo_doc);
     const sequence = String(receipt.correlativo).padStart(9, '0');
     const documentNumber = `${receipt.serie}-${sequence}`;
-    const qrPayload = receipt.clave_acceso ?? `${receipt.emisor_ruc}|${receipt.tipo_doc}|${receipt.serie}|${sequence}`;
+    const qrPayload =
+      receipt.clave_acceso ??
+      `${receipt.emisor_ruc}|${receipt.tipo_doc}|${receipt.serie}|${sequence}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, {
       errorCorrectionLevel: 'M',
       margin: 1,
@@ -58,12 +60,14 @@ export class SriRideExportService {
     });
 
     const logoPath =
-      company?.logo && existsSync(join(process.cwd(), 'public', 'img', company.logo))
+      company?.logo &&
+      existsSync(join(process.cwd(), 'public', 'img', company.logo))
         ? join(process.cwd(), 'public', 'img', company.logo)
         : null;
 
     const buffer = await createPdfBuffer((doc) => {
-      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const pageWidth =
+        doc.page.width - doc.page.margins.left - doc.page.margins.right;
       const left = doc.page.margins.left;
 
       doc.save();
@@ -93,11 +97,7 @@ export class SriRideExportService {
       doc.text(company?.direccion ?? '', headerX);
 
       const boxX = left + pageWidth - 125;
-      doc
-        .rect(boxX, 20, 125, 52)
-        .strokeColor('#6366f1')
-        .lineWidth(1)
-        .stroke();
+      doc.rect(boxX, 20, 125, 52).strokeColor('#6366f1').lineWidth(1).stroke();
       doc
         .font('Helvetica-Bold')
         .fontSize(8)
@@ -110,10 +110,13 @@ export class SriRideExportService {
         width: 117,
         align: 'center',
       });
-      doc.fontSize(11).fillColor('#212529').text(documentNumber, boxX + 4, 50, {
-        width: 117,
-        align: 'center',
-      });
+      doc
+        .fontSize(11)
+        .fillColor('#212529')
+        .text(documentNumber, boxX + 4, 50, {
+          width: 117,
+          align: 'center',
+        });
 
       doc.moveDown(3);
       doc
@@ -122,32 +125,49 @@ export class SriRideExportService {
         .fillColor('#212529')
         .rect(left, doc.y, pageWidth, 16)
         .fill('#f5f5f8');
-      doc.fillColor('#212529').text('  DATOS DEL CLIENTE', left + 4, doc.y - 12);
+      doc
+        .fillColor('#212529')
+        .text('  DATOS DEL CLIENTE', left + 4, doc.y - 12);
 
       doc.moveDown(0.4);
       const customerY = doc.y;
-      doc.font('Helvetica-Bold').fontSize(9).text('Cliente:', left, customerY, { continued: true });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .text('Cliente:', left, customerY, { continued: true });
       doc.font('Helvetica').text(` ${receipt.cliente_razon}`, { width: 250 });
-      doc.font('Helvetica-Bold').text('Fecha:', left + 300, customerY, { continued: true });
+      doc
+        .font('Helvetica-Bold')
+        .text('Fecha:', left + 300, customerY, { continued: true });
       doc.font('Helvetica').text(` ${formatPdfDate(receipt.fecha_emision)}`);
 
-      doc.font('Helvetica-Bold').text(
-        `${getSriCustomerDocLabel(receipt.cliente_tipo_doc)}:`,
-        left,
-        doc.y,
-        { continued: true },
-      );
-      doc.font('Helvetica').text(` ${receipt.cliente_num_doc ?? 'N/A'}`, { width: 250 });
-      doc.font('Helvetica-Bold').text('Moneda:', left + 300, doc.y - 12, { continued: true });
+      doc
+        .font('Helvetica-Bold')
+        .text(
+          `${getSriCustomerDocLabel(receipt.cliente_tipo_doc)}:`,
+          left,
+          doc.y,
+          { continued: true },
+        );
+      doc
+        .font('Helvetica')
+        .text(` ${receipt.cliente_num_doc ?? 'N/A'}`, { width: 250 });
+      doc
+        .font('Helvetica-Bold')
+        .text('Moneda:', left + 300, doc.y - 12, { continued: true });
       doc.font('Helvetica').text(` ${currency}`);
 
       if (receipt.cliente_direccion) {
-        doc.font('Helvetica-Bold').text('Dirección:', left, doc.y, { continued: true });
+        doc
+          .font('Helvetica-Bold')
+          .text('Dirección:', left, doc.y, { continued: true });
         doc.font('Helvetica').text(` ${receipt.cliente_direccion}`);
       }
 
       if (receipt.ref_serie) {
-        doc.font('Helvetica-Bold').text('Modifica a:', left, doc.y, { continued: true });
+        doc
+          .font('Helvetica-Bold')
+          .text('Modifica a:', left, doc.y, { continued: true });
         doc
           .font('Helvetica')
           .text(
@@ -197,7 +217,11 @@ export class SriRideExportService {
           x += colWidths[index];
         });
         rowY += 14;
-        doc.moveTo(left, rowY - 2).lineTo(left + pageWidth, rowY - 2).strokeColor('#dddddd').stroke();
+        doc
+          .moveTo(left, rowY - 2)
+          .lineTo(left + pageWidth, rowY - 2)
+          .strokeColor('#dddddd')
+          .stroke();
       }
       doc.y = rowY + 4;
 
@@ -205,7 +229,10 @@ export class SriRideExportService {
       const valueWidth = 70;
       const addTotalRow = (label: string, value: string, bold = false) => {
         doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(bold ? 11 : 9);
-        doc.text(label, left + labelWidth - 120, doc.y, { width: 120, align: 'right' });
+        doc.text(label, left + labelWidth - 120, doc.y, {
+          width: 120,
+          align: 'right',
+        });
         doc.text(value, left + labelWidth, doc.y - (bold ? 13 : 11), {
           width: valueWidth,
           align: 'right',
@@ -213,8 +240,14 @@ export class SriRideExportService {
         doc.moveDown(0.2);
       };
 
-      addTotalRow('OP. GRAVADA:', formatMoney(Number(receipt.gravadas ?? 0), currency));
-      addTotalRow(`IVA (${vatRate}%):`, formatMoney(Number(receipt.igv ?? 0), currency));
+      addTotalRow(
+        'OP. GRAVADA:',
+        formatMoney(Number(receipt.gravadas ?? 0), currency),
+      );
+      addTotalRow(
+        `IVA (${vatRate}%):`,
+        formatMoney(Number(receipt.igv ?? 0), currency),
+      );
       if (Number(receipt.descuentos ?? 0) > 0) {
         addTotalRow(
           'DESCUENTO:',
@@ -222,12 +255,19 @@ export class SriRideExportService {
         );
       }
       doc.fillColor('#6366f1');
-      addTotalRow('IMPORTE TOTAL:', formatMoney(Number(receipt.total), currency), true);
+      addTotalRow(
+        'IMPORTE TOTAL:',
+        formatMoney(Number(receipt.total), currency),
+        true,
+      );
       doc.fillColor('#212529');
 
       if (receipt.total_letras) {
         doc.moveDown(0.3);
-        doc.font('Helvetica-Oblique').fontSize(9).text(`SON: ${receipt.total_letras}`);
+        doc
+          .font('Helvetica-Oblique')
+          .fontSize(9)
+          .text(`SON: ${receipt.total_letras}`);
       }
 
       doc.moveDown(0.8);
@@ -236,7 +276,11 @@ export class SriRideExportService {
       doc
         .font('Helvetica-Bold')
         .fontSize(9)
-        .text('Representación impresa del Comprobante Electrónico (RIDE)', left + 88, qrY);
+        .text(
+          'Representación impresa del Comprobante Electrónico (RIDE)',
+          left + 88,
+          qrY,
+        );
       doc
         .font('Helvetica')
         .fontSize(8)
@@ -248,9 +292,12 @@ export class SriRideExportService {
         doc.text(`Clave de acceso: ${receipt.clave_acceso}`, left + 88);
       }
 
-      const status = receipt.estado_sri ?? comprobantes_electronicos_estado_sri.pendiente;
+      const status =
+        receipt.estado_sri ?? comprobantes_electronicos_estado_sri.pendiente;
       const statusColor =
-        status === comprobantes_electronicos_estado_sri.autorizado ? '#10b981' : '#ef4444';
+        status === comprobantes_electronicos_estado_sri.autorizado
+          ? '#10b981'
+          : '#ef4444';
       doc
         .fillColor(statusColor)
         .font('Helvetica-Bold')
@@ -259,7 +306,10 @@ export class SriRideExportService {
           left + 88,
         );
       if (receipt.cdr_descripcion) {
-        doc.font('Helvetica').fillColor('#212529').text(receipt.cdr_descripcion, left + 88);
+        doc
+          .font('Helvetica')
+          .fillColor('#212529')
+          .text(receipt.cdr_descripcion, left + 88);
       }
       if (receipt.xml_hash) {
         doc.fontSize(7).text(`Hash: ${receipt.xml_hash}`, left + 88);

@@ -1,17 +1,18 @@
 import { configuracion_sri_ambiente } from '@prisma/client';
 
-/** Mapea enum Prisma (`pruebas`/`produccion`) al código SRI (`1`/`2`). */
+type SriEnvironmentInput =
+  configuracion_sri_ambiente | '1' | '2' | null | undefined;
+
+/** Mapea enum Prisma (`pruebas`/`produccion`) o código SRI (`1`/`2`) al código SRI. */
 export function normalizeSriEnvironment(
-  value?: configuracion_sri_ambiente | string | null,
+  value?: SriEnvironmentInput,
 ): '1' | '2' {
-  if (value === configuracion_sri_ambiente.produccion || value === '2' || value === 'produccion') {
+  if (value === configuracion_sri_ambiente.produccion || value === '2') {
     return '2';
   }
   return '1';
 }
 
-export function isSriTestEnvironment(
-  value?: configuracion_sri_ambiente | string | null,
-) {
+export function isSriTestEnvironment(value?: SriEnvironmentInput) {
   return normalizeSriEnvironment(value) === '1';
 }

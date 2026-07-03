@@ -64,7 +64,10 @@ export class CashRegistersService {
     });
     if (!register) return null;
 
-    const totals = await this.calculateSessionTotals(register.id, register.fecha_apertura);
+    const totals = await this.calculateSessionTotals(
+      register.id,
+      register.fecha_apertura,
+    );
     const openingAmount = Number(register.monto_inicial);
 
     return {
@@ -87,7 +90,9 @@ export class CashRegistersService {
   async open(userId: number, dto: OpenCashRegisterDto) {
     const existing = await this.getCurrentOpen(userId);
     if (existing) {
-      throw new BadRequestException('Ya existe una caja abierta para este usuario');
+      throw new BadRequestException(
+        'Ya existe una caja abierta para este usuario',
+      );
     }
 
     const register = await this.prisma.cajas.create({
@@ -110,9 +115,13 @@ export class CashRegistersService {
       throw new NotFoundException('No hay caja abierta para cerrar');
     }
 
-    const totals = await this.calculateSessionTotals(register.id, register.fecha_apertura);
+    const totals = await this.calculateSessionTotals(
+      register.id,
+      register.fecha_apertura,
+    );
     const openingAmount = Number(register.monto_inicial);
-    const expectedAmount = openingAmount + totals.totalSales - totals.totalExpenses;
+    const expectedAmount =
+      openingAmount + totals.totalSales - totals.totalExpenses;
     const difference = dto.closingAmount - expectedAmount;
 
     const closed = await this.prisma.cajas.update({
@@ -150,7 +159,10 @@ export class CashRegistersService {
       .then((rows) => rows.map(mapCashRegister));
   }
 
-  private async calculateSessionTotals(cashRegisterId: number, openedAt: Date | null) {
+  private async calculateSessionTotals(
+    cashRegisterId: number,
+    openedAt: Date | null,
+  ) {
     const salesAgg = await this.prisma.ventas.aggregate({
       where: { caja_id: cashRegisterId },
       _sum: { total: true },

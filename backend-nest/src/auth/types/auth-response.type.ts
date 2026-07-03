@@ -1,9 +1,6 @@
 import { AppRole } from '../../common/constants/roles.constant';
 
-
-
 export interface AuthUserResponse {
-
   id: number;
 
   nombre: string;
@@ -13,13 +10,9 @@ export interface AuthUserResponse {
   rol: AppRole;
 
   estado: string;
-
 }
 
-
-
 export interface MemberAuthUserResponse {
-
   id: number;
 
   nombre: string;
@@ -37,18 +30,12 @@ export interface MemberAuthUserResponse {
   photoUrl: string | null;
 
   fechaRegistro: Date | null;
-
 }
 
-
-
 export interface TokenPairResponse {
-
   accessToken: string;
 
   refreshToken: string;
 
   user: AuthUserResponse | MemberAuthUserResponse;
-
 }
-

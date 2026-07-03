@@ -103,10 +103,14 @@ export class ReportsExportService {
     ]);
 
     const buffer = await createPdfBuffer((doc) => {
-      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const pageWidth =
+        doc.page.width - doc.page.margins.left - doc.page.margins.right;
       const left = doc.page.margins.left;
 
-      doc.fontSize(16).fillColor('#111111').text(company.systemName, { align: 'center' });
+      doc
+        .fontSize(16)
+        .fillColor('#111111')
+        .text(company.systemName, { align: 'center' });
       doc
         .fontSize(10)
         .text(
@@ -151,13 +155,23 @@ export class ReportsExportService {
       doc.y = chartStartY + 140;
       doc.moveDown();
 
-      drawMovementsTable(doc, left, doc.y, pageWidth, movements.items.slice(0, 60), company.currency);
+      drawMovementsTable(
+        doc,
+        left,
+        doc.y,
+        pageWidth,
+        movements.items.slice(0, 60),
+        company.currency,
+      );
 
       doc.moveDown();
-      doc.fontSize(8).fillColor('#666666').text(
-        `Generado el ${formatPdfDate(new Date())} — ${company.systemName}`,
-        { align: 'center' },
-      );
+      doc
+        .fontSize(8)
+        .fillColor('#666666')
+        .text(
+          `Generado el ${formatPdfDate(new Date())} — ${company.systemName}`,
+          { align: 'center' },
+        );
       doc.fillColor('#000000');
     });
 
@@ -210,14 +224,20 @@ function drawSummaryBox(
       doc.save();
       if (isProfitCell) {
         doc.rect(cellX, rowY, colWidth, rowHeight).fill(profitColor);
-        doc.fontSize(9).fillColor('#FFFFFF').text(text, cellX + 6, rowY + 6, {
-          width: colWidth - 12,
-        });
+        doc
+          .fontSize(9)
+          .fillColor('#FFFFFF')
+          .text(text, cellX + 6, rowY + 6, {
+            width: colWidth - 12,
+          });
       } else {
         doc.rect(cellX, rowY, colWidth, rowHeight).stroke('#E5E7EB');
-        doc.fontSize(9).fillColor('#111111').text(text, cellX + 6, rowY + 6, {
-          width: colWidth - 12,
-        });
+        doc
+          .fontSize(9)
+          .fillColor('#111111')
+          .text(text, cellX + 6, rowY + 6, {
+            width: colWidth - 12,
+          });
       }
       doc.restore();
     });

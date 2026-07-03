@@ -85,17 +85,19 @@ export class MembersService {
     await this.findByIdOrThrow(id);
     if (dto.dni) await this.ensureUniqueDni(dto.dni, id);
 
-    return this.prisma.socios.update({
-      where: { id },
-      data: {
-        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
-        ...(dto.dni !== undefined ? { dni: dto.dni } : {}),
-        ...(dto.email !== undefined ? { email: dto.email } : {}),
-        ...(dto.telefono !== undefined ? { telefono: dto.telefono } : {}),
-        ...(dto.estado !== undefined ? { estado: dto.estado } : {}),
-        ...(dto.foto !== undefined ? { foto: dto.foto } : {}),
-      },
-    }).then((m) => this.toPublicMember(m));
+    return this.prisma.socios
+      .update({
+        where: { id },
+        data: {
+          ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+          ...(dto.dni !== undefined ? { dni: dto.dni } : {}),
+          ...(dto.email !== undefined ? { email: dto.email } : {}),
+          ...(dto.telefono !== undefined ? { telefono: dto.telefono } : {}),
+          ...(dto.estado !== undefined ? { estado: dto.estado } : {}),
+          ...(dto.foto !== undefined ? { foto: dto.foto } : {}),
+        },
+      })
+      .then((m) => this.toPublicMember(m));
   }
 
   async updateStatus(id: number, estado: socios_estado) {
@@ -200,9 +202,7 @@ export class MembersService {
             : null,
         ),
       effectiveStatus,
-      currentMembership: refreshed
-        ? await this.mapMembership(refreshed)
-        : null,
+      currentMembership: refreshed ? this.mapMembership(refreshed) : null,
     };
   }
 
@@ -222,7 +222,7 @@ export class MembersService {
       include: { planes: true },
     });
 
-    return Promise.all(refreshed.map((m) => this.mapMembership(m)));
+    return refreshed.map((m) => this.mapMembership(m));
   }
 
   private async getLatestMembership(memberId: number) {
@@ -234,7 +234,11 @@ export class MembersService {
   }
 
   private async syncExpiredMembership(
-    membership: { id: number; estado: string | null; fecha_fin: Date | null } | null,
+    membership: {
+      id: number;
+      estado: string | null;
+      fecha_fin: Date | null;
+    } | null,
   ) {
     if (!membership?.fecha_fin || membership.estado !== 'activa') return;
 
@@ -251,7 +255,7 @@ export class MembersService {
     }
   }
 
-  private async mapMembership(
+  private mapMembership(
     membership: Prisma.suscripcionesGetPayload<{ include: { planes: true } }>,
   ) {
     const effectiveStatus = computeMembershipEffectiveStatus({

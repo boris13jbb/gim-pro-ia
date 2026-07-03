@@ -25,7 +25,9 @@ export class BodyProgressController {
 
   @Get('me')
   @Roles('socio')
-  @ApiOperation({ summary: 'Socio: historial y gráficos de su progreso físico' })
+  @ApiOperation({
+    summary: 'Socio: historial y gráficos de su progreso físico',
+  })
   getMyProgress(@CurrentUser() user: JwtPayload) {
     const memberId = user.memberId ?? user.sub;
     return this.bodyProgressService.listMemberMeasurements(memberId);
@@ -33,7 +35,9 @@ export class BodyProgressController {
 
   @Get('members/:memberId/measurements')
   @Roles('admin', 'recepcionista', 'entrenador', 'socio')
-  @ApiOperation({ summary: 'Historial de medidas corporales con datos para gráficos' })
+  @ApiOperation({
+    summary: 'Historial de medidas corporales con datos para gráficos',
+  })
   listMeasurements(
     @Param('memberId', ParseIntPipe) memberId: number,
     @CurrentUser() user: JwtPayload,
@@ -67,7 +71,10 @@ export class BodyProgressController {
 
   @Delete('measurements/:id')
   @Roles('admin', 'entrenador')
-  @ApiOperation({ summary: 'Eliminar medida corporal (conserva historial en auditoría futura)' })
+  @ApiOperation({
+    summary:
+      'Eliminar medida corporal (conserva historial en auditoría futura)',
+  })
   async deleteMeasurement(@Param('id', ParseIntPipe) id: number) {
     return this.bodyProgressService.deleteMeasurement(id);
   }

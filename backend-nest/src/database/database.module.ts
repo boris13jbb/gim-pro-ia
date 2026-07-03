@@ -8,4 +8,3 @@ import { PrismaHealthIndicator } from './prisma.health';
   exports: [PrismaService, PrismaHealthIndicator],
 })
 export class DatabaseModule {}
-

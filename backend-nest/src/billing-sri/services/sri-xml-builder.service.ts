@@ -18,7 +18,10 @@ export class SriXmlBuilderService {
     return { xml, accessKey: header.claveAcceso };
   }
 
-  buildCreditNote(header: SriReceiptHeaderCalculated, lines: SriCalculatedLine[]) {
+  buildCreditNote(
+    header: SriReceiptHeaderCalculated,
+    lines: SriCalculatedLine[],
+  ) {
     const xml = this.buildCreditNoteXml(header, lines);
     return { xml, accessKey: header.claveAcceso };
   }

@@ -58,8 +58,15 @@ export class WorkoutRoutinesService {
   }
 
   private ensureAtLeastOneDay(dto: CreateWorkoutRoutineDto) {
-    const hasContent = [dto.day1, dto.day2, dto.day3, dto.day4, dto.day5, dto.day6, dto.notes]
-      .some((value) => typeof value === 'string' && value.trim().length > 0);
+    const hasContent = [
+      dto.day1,
+      dto.day2,
+      dto.day3,
+      dto.day4,
+      dto.day5,
+      dto.day6,
+      dto.notes,
+    ].some((value) => typeof value === 'string' && value.trim().length > 0);
 
     if (!hasContent) {
       throw new BadRequestException(

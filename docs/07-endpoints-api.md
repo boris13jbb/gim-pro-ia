@@ -445,6 +445,46 @@ Valida payload QR (DNI del carnet legacy).
 ### Descripción
 Datos para carnet digital: socio, `qrPayload` (DNI), estado de acceso.
 
+### Rol permitido
+`admin`, `recepcionista`, `entrenador`
+
+---
+
+## GET /qr-access/me/card
+
+### Descripción
+Socio autenticado: carnet digital propio con QR (DNI).
+
+### Rol permitido
+`socio`
+
+### Respuesta exitosa (200)
+Misma estructura que `GET /qr-access/members/:id/card`.
+
+### Errores posibles
+- `401` — sin token
+- `403` — rol distinto de socio
+
+---
+
+## GET /members/me/membership
+
+### Descripción
+Estado de membresía del socio autenticado (`effectiveStatus`, `isMembershipValid`).
+
+### Rol permitido
+`socio`
+
+---
+
+## GET /members/me/memberships
+
+### Descripción
+Historial de membresías del socio autenticado.
+
+### Rol permitido
+`socio`
+
 ---
 
 *Ver `docs/fases/fase-04-asistencias-qr.md` para detalle de la fase.*

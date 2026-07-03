@@ -17,8 +17,7 @@ export class SriXmlSignerService {
       privateKey: privateKeyPem,
       publicCert: certificatePem,
     });
-    signedXml.signatureAlgorithm =
-      'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+    signedXml.signatureAlgorithm = 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
     signedXml.addReference({
       xpath: `//*[local-name(.)='${rootName}']`,
       transforms: ['http://www.w3.org/2000/09/xmldsig#enveloped-signature'],
@@ -43,12 +42,16 @@ export class SriXmlSignerService {
     const p12Der = forge.util.createBuffer(buffer.toString('binary'));
     const p12Asn1 = forge.asn1.fromDer(p12Der.getBytes());
     const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password || undefined);
-    const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+    const keyBags = p12.getBags({
+      bagType: forge.pki.oids.pkcs8ShroudedKeyBag,
+    });
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
     const privateKey = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0]?.key;
     const certificate = certBags[forge.pki.oids.certBag]?.[0]?.cert;
     if (!privateKey || !certificate) {
-      throw new Error('No se pudo leer la clave privada o el certificado del P12');
+      throw new Error(
+        'No se pudo leer la clave privada o el certificado del P12',
+      );
     }
     return {
       privateKeyPem: forge.pki.privateKeyToPem(privateKey),

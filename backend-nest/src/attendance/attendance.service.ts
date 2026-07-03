@@ -160,7 +160,15 @@ export class AttendanceService {
       .slice(0, 5);
 
     if (sorted.length === 0) {
-      return { from, to, leaders: [] as Array<{ memberId: number; memberName: string; visits: number }> };
+      return {
+        from,
+        to,
+        leaders: [] as Array<{
+          memberId: number;
+          memberName: string;
+          visits: number;
+        }>,
+      };
     }
 
     const memberIds = sorted.map((g) => g.socio_id);
@@ -188,7 +196,9 @@ export class AttendanceService {
     estado: socios_estado | null;
     foto: string | null;
   }): Promise<AttendanceAccessPreview> {
-    const membership = await this.membersService.getMembershipSummary(member.id);
+    const membership = await this.membersService.getMembershipSummary(
+      member.id,
+    );
     const canAccess =
       member.estado === socios_estado.activo && membership.isMembershipValid;
 

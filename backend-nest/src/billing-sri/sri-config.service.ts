@@ -49,7 +49,9 @@ export class SriConfigService {
 
     const certDir = process.env.SRI_CERT_DIR ?? 'cert';
     const certFile = config?.sri_certificado_p12 ?? '';
-    const certPath = certFile ? join(process.cwd(), 'public', certDir, certFile) : '';
+    const certPath = certFile
+      ? join(process.cwd(), 'public', certDir, certFile)
+      : '';
 
     const series = await this.prisma.sri_series.findMany({
       where: { estado: sri_series_estado.activo },
@@ -64,7 +66,12 @@ export class SriConfigService {
     });
 
     const environment = normalizeSriEnvironment(config?.sri_ambiente);
-    const readiness = this.buildReadiness(config, certFile, certPath, environment);
+    const readiness = this.buildReadiness(
+      config,
+      certFile,
+      certPath,
+      environment,
+    );
 
     return {
       taxId: config?.ruc ?? null,
@@ -80,7 +87,7 @@ export class SriConfigService {
       emissionPoint: config?.sri_punto_emision ?? '001',
       certificateFileName: certFile || null,
       hasCertificate: certFile ? existsSync(certPath) : false,
-      hasCertificatePassword: !!(config?.sri_certificado_clave?.trim()),
+      hasCertificatePassword: !!config?.sri_certificado_clave?.trim(),
       smtpConfigured: isSmtpConfigured(),
       productionReady: readiness.productionReady,
       readinessChecks: readiness.checks,
@@ -123,7 +130,9 @@ export class SriConfigService {
     const checks: ReadinessCheck[] = [
       {
         id: 'ruc',
-        ok: !!(config?.ruc?.trim() && config.ruc.replace(/\D/g, '').length >= 10),
+        ok: !!(
+          config?.ruc?.trim() && config.ruc.replace(/\D/g, '').length >= 10
+        ),
         message: config?.ruc
           ? 'RUC configurado'
           : 'Configure el RUC en configuración del sistema',
@@ -166,8 +175,7 @@ export class SriConfigService {
 
     const productionChecks = checks.filter((item) => item.id !== 'smtp');
     const productionReady =
-      environment === '2' &&
-      productionChecks.every((item) => item.ok);
+      environment === '2' && productionChecks.every((item) => item.ok);
 
     if (environment === '1') {
       checks.push({

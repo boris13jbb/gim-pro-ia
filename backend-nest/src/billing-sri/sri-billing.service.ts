@@ -50,7 +50,9 @@ export class SriBillingService {
       throw new NotFoundException('Suscripción no encontrada');
     }
     if (membership.comprobante_id) {
-      throw new BadRequestException('La suscripción ya tiene comprobante asociado');
+      throw new BadRequestException(
+        'La suscripción ya tiene comprobante asociado',
+      );
     }
 
     const member = membership.socios;
@@ -124,13 +126,9 @@ export class SriBillingService {
       customerDocumentType:
         sale.cliente_tipo_doc ?? sale.socios?.tipo_doc ?? '1',
       customerTaxId:
-        sale.cliente_num_doc ??
-        sale.socios?.dni ??
-        '9999999999999',
+        sale.cliente_num_doc ?? sale.socios?.dni ?? '9999999999999',
       customerName:
-        sale.cliente_razon ??
-        sale.socios?.nombre ??
-        'CONSUMIDOR FINAL',
+        sale.cliente_razon ?? sale.socios?.nombre ?? 'CONSUMIDOR FINAL',
       customerAddress:
         sale.cliente_direccion ??
         sale.socios?.direccion_fiscal ??
@@ -154,14 +152,20 @@ export class SriBillingService {
     return result;
   }
 
-  async issueCreditNote(receiptId: number, dto: IssueCreditNoteDto, userId: number) {
+  async issueCreditNote(
+    receiptId: number,
+    dto: IssueCreditNoteDto,
+    userId: number,
+  ) {
     const original = await this.repository.findReceiptWithLines(receiptId);
     if (original.tipo_doc !== '01') {
       throw new BadRequestException(
         'Solo se puede emitir nota de crédito sobre facturas',
       );
     }
-    if (original.estado_sri !== comprobantes_electronicos_estado_sri.autorizado) {
+    if (
+      original.estado_sri !== comprobantes_electronicos_estado_sri.autorizado
+    ) {
       throw new BadRequestException(
         'La factura original debe estar autorizada por el SRI',
       );
@@ -282,7 +286,7 @@ export class SriBillingService {
           ? this.xmlBuilder.buildCreditNote(header, lines)
           : this.xmlBuilder.buildInvoice(header, lines);
 
-      const { signedXml, hash, simulatedSign } = await this.signXml(
+      const { signedXml, hash, simulatedSign } = this.signXml(
         built.xml,
         company,
       );
@@ -303,7 +307,8 @@ export class SriBillingService {
       );
 
       if (!reception.ok) {
-        const message = reception.messages.join(' | ') || 'Comprobante devuelto';
+        const message =
+          reception.messages.join(' | ') || 'Comprobante devuelto';
         await this.repository.updateShipment(receiptId, {
           status: comprobantes_electronicos_estado_sri.devuelta,
           code: 'DEVUELTA',
@@ -353,7 +358,8 @@ export class SriBillingService {
           description: simulatedSign
             ? 'Autorizado (firma o SRI en modo pruebas/simulación)'
             : 'Autorizado por el SRI',
-          simulated: reception.simulated || authorization.simulated || simulatedSign,
+          simulated:
+            reception.simulated || authorization.simulated || simulatedSign,
         };
       }
 
@@ -397,7 +403,10 @@ export class SriBillingService {
     }
   }
 
-  private async signXml(xml: string, company: Awaited<ReturnType<SriBillingService['loadCompanyConfig']>>) {
+  private signXml(
+    xml: string,
+    company: Awaited<ReturnType<SriBillingService['loadCompanyConfig']>>,
+  ) {
     const certDir = process.env.SRI_CERT_DIR ?? 'cert';
     const certFile = company.certificateFile;
     const certPassword = company.certificatePassword;
@@ -431,10 +440,19 @@ export class SriBillingService {
   }
 
   private persistXmlFile(
-    header: { emisorRuc: string; documentType: string; series: string; correlativo: number },
+    header: {
+      emisorRuc: string;
+      documentType: string;
+      series: string;
+      correlativo: number;
+    },
     xml: string,
   ) {
-    const xmlDir = join(process.cwd(), 'public', process.env.SRI_XML_DIR ?? 'sri/xml');
+    const xmlDir = join(
+      process.cwd(),
+      'public',
+      process.env.SRI_XML_DIR ?? 'sri/xml',
+    );
     if (!existsSync(xmlDir)) {
       mkdirSync(xmlDir, { recursive: true });
     }
@@ -452,7 +470,8 @@ export class SriBillingService {
     return {
       ruc: config.ruc ?? '',
       razonSocial: config.razon_social ?? config.nombre_sistema ?? 'Gym System',
-      nombreComercial: config.nombre_comercial ?? config.nombre_sistema ?? 'Gym System',
+      nombreComercial:
+        config.nombre_comercial ?? config.nombre_sistema ?? 'Gym System',
       direccion: config.direccion ?? 'Dirección Matriz',
       ivaTasa: Number(config.iva_tasa ?? 15),
       incluyeIva: config.incluye_iva ?? true,

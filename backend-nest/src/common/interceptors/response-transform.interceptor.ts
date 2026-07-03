@@ -28,7 +28,6 @@ export class ResponseTransformInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    return next.handle().pipe(map((data) => ({ ok: true, data })));
+    return next.handle().pipe(map((data: unknown) => ({ ok: true, data })));
   }
 }
-

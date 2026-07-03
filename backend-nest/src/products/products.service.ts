@@ -110,7 +110,9 @@ export class ProductsService {
       this.assertNonNegativeStock(dto.stock);
     }
     if (dto.name !== undefined && !dto.name.trim()) {
-      throw new BadRequestException('El nombre del producto no puede estar vacío');
+      throw new BadRequestException(
+        'El nombre del producto no puede estar vacío',
+      );
     }
 
     const stockWillChange =

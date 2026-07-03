@@ -1014,3 +1014,127 @@ Sincronización `backend-nest/.env` con SMTP Gmail y variables SRI. Sanitizació
 
 ### Próximo paso
 **Fase 10 — Flutter** (app consumidor de API).
+
+---
+
+## 2026-07-02 — Auditoría técnica integral backend + correcciones
+
+### Cambio realizado
+Revisión profesional del backend NestJS (fases 01–09): compilación, lint, e2e, scripts `audit:phase-*` y corrección de bugs detectados en auth (staff inactivo en refresh/me), ventas POS (agregación de cantidades por producto duplicado), calidad de código (ESLint, e2e desactualizado, tipos SRI).
+
+### Archivos modificados
+- `backend-nest/src/auth/auth.service.ts`
+- `backend-nest/src/auth/auth.controller.ts`
+- `backend-nest/src/auth/dto/member-login.dto.ts`
+- `backend-nest/src/auth/strategies/jwt-refresh.strategy.ts`
+- `backend-nest/src/sales/sales.service.ts`
+- `backend-nest/src/attendance/dto/scan-attendance.dto.ts`
+- `backend-nest/src/users/dto/create-user.dto.ts`
+- `backend-nest/src/members/members.service.ts`
+- `backend-nest/src/memberships/memberships.service.ts`
+- `backend-nest/src/billing-sri/sri-billing.service.ts`
+- `backend-nest/src/billing-sri/utils/sri-environment.util.ts`
+- `backend-nest/src/common/filters/http-exception.filter.ts`
+- `backend-nest/src/common/interceptors/response-transform.interceptor.ts`
+- `backend-nest/src/main.ts`
+- `backend-nest/eslint.config.mjs`
+- `backend-nest/test/app.e2e-spec.ts`
+
+### Archivos creados
+- `backend-nest/tsconfig.eslint.json`
+
+### Funcionalidad afectada
+Autenticación (refresh/me staff inactivo), ventas POS (validación stock con líneas duplicadas), facturación SRI (tipos ambiente), calidad estática y pruebas e2e.
+
+### Código reutilizado
+`assertMemberResourceAccess`, `InventoryStockService`, scripts de auditoría por fase existentes.
+
+### Duplicados revisados
+Sin duplicados nuevos; consolidación de cantidades por producto en `SalesService.create`.
+
+### Optimizaciones realizadas
+`mapMembership` sincrónico; `signXml` sincrónico; filtro HTTP sin `any`; ESLint con `tsconfig.eslint.json` incluyendo `test/`.
+
+### Comentarios agregados en el código
+Sin comentarios nuevos (cambios de tipado y reglas de negocio ya documentadas en servicios existentes).
+
+### Pruebas realizadas
+- `npm run build` OK
+- `npm run lint` OK (0 errores)
+- `npm test` OK (1 suite)
+- `npm run test:e2e` OK (2 tests)
+- `npm run audit:phase-02` → 22/22 OK
+- `npm run audit:phase-03` a `08` → OK (ejecutados en sesión previa)
+- `npm run audit:phase-06` → 24/24 OK
+- `npm run audit:phase-09` → 17/17 OK
+
+### Resultado
+Pendiente de aprobación — backend estable para iniciar Fase 10 Flutter.
+
+### Riesgos detectados
+- Access token JWT sigue válido hasta expirar aunque el usuario sea desactivado (comportamiento estándar JWT; mitigado en `/me` y `/refresh`).
+- Cobertura de tests unitarios mínima (solo `app.controller.spec.ts`).
+- Flutter (`frontend-flutter/`) aún no existe.
+
+### Rollback
+Revertir commits de esta sesión en los archivos listados.
+
+### Próximo paso
+Fase 10 Flutter o ampliar tests de auth/ventas según prioridad del usuario.
+
+---
+
+## 2026-07-02 — Fase 10 slice 1: App Flutter socio + endpoints API
+
+### Cambio realizado
+Inicio Fase 10: proyecto `frontend-flutter/` con login JWT, navegación 5 tabs (inicio, carnet QR, progreso, rutina, perfil), servicios API con refresh automático y almacenamiento seguro. Backend: endpoints socio `GET /members/me/membership`, `GET /members/me/memberships`, `GET /qr-access/me/card`.
+
+### Archivos modificados
+- `backend-nest/src/members/members.module.ts`
+- `backend-nest/src/qr-access/qr-access.controller.ts`
+- `backend-nest/package.json`
+- `README.md`
+- `docs/07-endpoints-api.md`
+- `docs/09-guia-instalacion-flutter.md`
+- `docs/fases/fase-10-flutter-app-cliente.md`
+- `docs/06-checklist-pruebas.md`
+
+### Archivos creados
+- `backend-nest/src/members/member-self.controller.ts`
+- `backend-nest/scripts/audit-phase-10.mjs`
+- `frontend-flutter/` (proyecto completo slice 1)
+- `frontend-flutter/README.md`
+
+### Funcionalidad afectada
+App móvil socio; API complemento endpoints self-service.
+
+### Código reutilizado
+`MembersService`, `QrAccessService`, guards JWT/roles, patrones audit-phase-*.
+
+### Duplicados revisados
+Sin duplicación de lógica de membresía; Flutter solo consume servicios existentes.
+
+### Optimizaciones realizadas
+ApiClient con interceptor refresh; go_router con redirect por estado auth.
+
+### Comentarios agregados en el código
+Seguridad en `MemberSelfController` (memberId desde JWT).
+
+### Pruebas realizadas
+- `npm run build` OK
+- `npm run audit:phase-10` → **11/11 OK**
+- `flutter analyze` OK
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 1 operativo.
+
+### Riesgos detectados
+- Prueba manual UI pendiente en dispositivo físico
+- HTTP cleartext en Android solo para desarrollo
+
+### Rollback
+Eliminar `frontend-flutter/` y revertir `member-self.controller.ts` + ruta qr `me/card`.
+
+### Próximo paso
+Prueba manual Flutter + aprobación slice 1; slice 2 (notificaciones, polish UI) según decisión.

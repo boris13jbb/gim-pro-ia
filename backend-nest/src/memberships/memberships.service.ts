@@ -7,7 +7,6 @@ import {
   planes_estado,
   socios_estado,
   suscripciones_estado,
-  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { CreateMembershipDto } from './dto/create-membership.dto';
@@ -68,7 +67,9 @@ export class MembershipsService {
     });
     if (!member) throw new NotFoundException('Socio no encontrado');
     if (member.estado === socios_estado.inactivo) {
-      throw new BadRequestException('No se puede asignar membresía a socio inactivo');
+      throw new BadRequestException(
+        'No se puede asignar membresía a socio inactivo',
+      );
     }
 
     const plan = await this.prisma.planes.findUnique({
@@ -127,7 +128,10 @@ export class MembershipsService {
     estado: suscripciones_estado | null;
     fecha_fin: Date | null;
   }) {
-    if (!membership.fecha_fin || membership.estado !== suscripciones_estado.activa) {
+    if (
+      !membership.fecha_fin ||
+      membership.estado !== suscripciones_estado.activa
+    ) {
       return;
     }
 

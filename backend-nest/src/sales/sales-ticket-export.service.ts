@@ -33,10 +33,9 @@ export class SalesTicketExportService {
         doc
           .fontSize(9)
           .text(`Ticket N° ${ticket.ticketNumber}`, { align: 'left' });
-        doc.text(
-          `Fecha: ${formatPdfDateTime(ticket.summary.issuedAt)}`,
-          { align: 'right' },
-        );
+        doc.text(`Fecha: ${formatPdfDateTime(ticket.summary.issuedAt)}`, {
+          align: 'right',
+        });
         doc.text(`Cajero: ${ticket.summary.cashierName ?? 'N/A'}`);
         doc.text(`Cliente: ${ticket.summary.clientDisplayName}`);
         doc.moveDown();
@@ -53,17 +52,21 @@ export class SalesTicketExportService {
         }
 
         doc.moveDown();
-        doc.fontSize(10).text(
-          `TOTAL: ${formatMoney(ticket.summary.total, company.currency)}`,
-          { align: 'right' },
-        );
+        doc
+          .fontSize(10)
+          .text(
+            `TOTAL: ${formatMoney(ticket.summary.total, company.currency)}`,
+            { align: 'right' },
+          );
         doc
           .fontSize(8)
           .text(`Pago: ${ticket.summary.paymentMethod ?? 'efectivo'}`, {
             align: 'center',
           });
         doc.moveDown();
-        doc.fontSize(7).text('¡Gracias por tu preferencia!', { align: 'center' });
+        doc
+          .fontSize(7)
+          .text('¡Gracias por tu preferencia!', { align: 'center' });
       },
       { size: [226.77, 566.93], margin: 12 },
     );

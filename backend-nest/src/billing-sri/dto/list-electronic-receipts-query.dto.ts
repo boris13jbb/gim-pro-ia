@@ -1,8 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { comprobantes_electronicos_estado_sri } from '@prisma/client';
-import { firstDayOfCurrentMonth, todayDateString } from '../../common/utils/date.util';
+import {
+  firstDayOfCurrentMonth,
+  todayDateString,
+} from '../../common/utils/date.util';
 
 export class ListElectronicReceiptsQueryDto {
   @ApiPropertyOptional({ example: firstDayOfCurrentMonth() })
@@ -15,7 +25,10 @@ export class ListElectronicReceiptsQueryDto {
   @IsDateString()
   toDate?: string;
 
-  @ApiPropertyOptional({ example: '01', description: '01 Factura, 04 Nota de crédito' })
+  @ApiPropertyOptional({
+    example: '01',
+    description: '01 Factura, 04 Nota de crédito',
+  })
   @IsOptional()
   @IsString()
   documentType?: string;

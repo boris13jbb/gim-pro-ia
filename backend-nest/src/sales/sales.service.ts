@@ -101,14 +101,25 @@ export class SalesService {
    * - Stock nunca negativo (validado vía InventoryStockService + movimiento tipo sale).
    */
   async create(dto: CreateSaleDto, userId: number) {
-    const openRegister = await this.cashRegistersService.requireOpenRegister(userId);
+    const openRegister =
+      await this.cashRegistersService.requireOpenRegister(userId);
 
-    const productIds = dto.items.map((item) => item.productId);
+    const productIds = [...new Set(dto.items.map((item) => item.productId))];
     const products = await this.prisma.productos.findMany({
       where: { id: { in: productIds } },
       include: { categorias: true },
     });
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const productMap = new Map(
+      products.map((product) => [product.id, product]),
+    );
+
+    const quantityByProduct = new Map<number, number>();
+    for (const item of dto.items) {
+      quantityByProduct.set(
+        item.productId,
+        (quantityByProduct.get(item.productId) ?? 0) + item.quantity,
+      );
+    }
 
     let grossTotal = 0;
     const lineItems: Array<{
@@ -118,13 +129,15 @@ export class SalesService {
       subtotal: number;
     }> = [];
 
-    for (const item of dto.items) {
-      const product = productMap.get(item.productId);
+    for (const [productId, totalQuantity] of quantityByProduct) {
+      const product = productMap.get(productId);
       if (!product) {
-        throw new NotFoundException(`Producto ${item.productId} no encontrado`);
+        throw new NotFoundException(`Producto ${productId} no encontrado`);
       }
       if (product.estado !== productos_estado.activo) {
-        throw new BadRequestException(`Producto ${product.nombre} está inactivo`);
+        throw new BadRequestException(
+          `Producto ${product.nombre} está inactivo`,
+        );
       }
       if (product.categorias?.estado !== 'activo') {
         throw new BadRequestException(
@@ -132,18 +145,18 @@ export class SalesService {
         );
       }
       const available = product.stock ?? 0;
-      if (item.quantity > available) {
+      if (totalQuantity > available) {
         throw new BadRequestException(
           `Stock insuficiente para ${product.nombre}. Disponible: ${available}`,
         );
       }
 
       const unitPrice = Number(product.precio_venta);
-      const subtotal = unitPrice * item.quantity;
+      const subtotal = unitPrice * totalQuantity;
       grossTotal += subtotal;
       lineItems.push({
-        productId: item.productId,
-        quantity: item.quantity,
+        productId,
+        quantity: totalQuantity,
         unitPrice,
         subtotal,
       });
@@ -151,7 +164,9 @@ export class SalesService {
 
     const discount = dto.discount ?? 0;
     if (discount > grossTotal) {
-      throw new BadRequestException('El descuento no puede superar el total de la venta');
+      throw new BadRequestException(
+        'El descuento no puede superar el total de la venta',
+      );
     }
     const total = Math.max(0, grossTotal - discount);
 

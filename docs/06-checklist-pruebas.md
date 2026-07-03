@@ -21,6 +21,8 @@
 | CORS / Helmet | Configurados en `main.ts` | Sí | OK |
 | `.env.example` sin secretos reales | Placeholders | Sí | OK |
 | `npm run build` | Compila sin errores | Sí | OK |
+| `npm run lint` | 0 errores ESLint | Sí | OK (2026-07-02) |
+| `npm run test:e2e` | 2 tests pasan | Sí | OK (2026-07-02) |
 
 ## Fase 02 — Auth JWT
 
@@ -45,6 +47,8 @@
 | Cambiar estado | 200 | Sí | OK |
 | Cambiar contraseña | 200 | Sí | OK |
 | Access token expirado → refresh | 401 en `/me` | Sí | OK (JWT expirado en auditoría) |
+| Staff inactivo en `/auth/refresh` | 401 cuenta inhabilitada | Sí | OK (corrección auditoría 2026-07-02) |
+| Staff inactivo en `/auth/me` | 401 cuenta inhabilitada | Sí | OK (corrección auditoría 2026-07-02) |
 
 ### Script de auditoría
 
@@ -165,6 +169,7 @@ npm run audit:phase-05
 | 06 | Ventas | Registrar venta POS | POST `/sales` | 201 + stock | 201 stock=18 | OK |
 | 06 | Ventas | Movimiento tipo sale | GET `/inventory/movements?saleId=` | sale auditado | OK | OK |
 | 06 | Ventas | Stock insuficiente | POST `/sales` exceso | 400 | 400 | OK |
+| 06 | Ventas | Producto duplicado en items | POST `/sales` misma línea 2× | 400 si stock total excede | OK (código) | OK |
 | 06 | Build | Compilar | `npm run build` | OK | OK | OK |
 
 ### Script de auditoría Fase 06
@@ -243,3 +248,27 @@ npm run audit:phase-09
 ```
 
 Última ejecución: **17/17 OK** (`npm run audit:phase-09`).
+
+## Fase 10 — Flutter app socio
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | API | GET membresía propia | GET `/members/me/membership` | 200 socio | activa | OK |
+| 10 | API | GET historial membresías | GET `/members/me/memberships` | 200 array | 1 | OK |
+| 10 | API | GET carnet QR propio | GET `/qr-access/me/card` | 200 + qrPayload | DNI | OK |
+| 10 | API | Staff bloqueado me/membership | GET con admin | 403 | 403 | OK |
+| 10 | Flutter | Análisis estático | `flutter analyze` | sin errores | OK | OK |
+| 10 | Flutter | Test widget | `flutter test` | 1/1 | 1/1 | OK |
+| 10 | Flutter | Login UI | Pantalla login | navega a home | OK (Chrome) | OK |
+| 10 | Flutter | CORS web :8080 | Login desde Chrome | 201 | corregido CORS | OK |
+| 10 | Flutter | Carnet QR | Tab Carnet | muestra QR | Pendiente manual | Pendiente |
+| 10 | Flutter | Registrar asistencia | Botón inicio | 201 o 409 | Pendiente manual | Pendiente |
+
+### Script de auditoría Fase 10 (API)
+
+```bash
+cd backend-nest
+npm run audit:phase-10
+```
+
+Última ejecución: **11/11 OK** (`npm run audit:phase-10`).

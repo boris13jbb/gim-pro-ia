@@ -122,7 +122,9 @@ export class BodyProgressService {
   }
 }
 
-function decimalToNumber(value: Prisma.Decimal | null | undefined): number | null {
+function decimalToNumber(
+  value: Prisma.Decimal | null | undefined,
+): number | null {
   if (value == null) return null;
   return Number(value);
 }

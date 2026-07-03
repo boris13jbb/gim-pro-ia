@@ -1,9 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, Min } from 'class-validator';
-import {
-  ATTENDANCE_METHODS,
-} from '../constants/attendance-method.constant';
+import { ATTENDANCE_METHODS } from '../constants/attendance-method.constant';
 
 export class RegisterAttendanceDto {
   @ApiProperty({ example: 3 })

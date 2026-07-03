@@ -1,8 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
-import {
-  ATTENDANCE_METHODS,
-} from '../constants/attendance-method.constant';
 
 const SCAN_METHODS = ['dni', 'qr'] as const;
 

@@ -71,7 +71,9 @@ export class AttendanceExportService {
       doc.text(`Promedio diario: ${report.averageDaily}`);
       doc.moveDown();
 
-      doc.fontSize(9).text('Fecha/Hora | Socio | DNI | Método', { underline: true });
+      doc
+        .fontSize(9)
+        .text('Fecha/Hora | Socio | DNI | Método', { underline: true });
       doc.moveDown(0.3);
 
       for (const item of report.items) {

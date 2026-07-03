@@ -75,9 +75,15 @@ export class ProductPhotoService {
     }
     const ext = extname(file.originalname).replace('.', '').toLowerCase();
     if (!this.config.allowedExtensions.has(ext)) {
-      throw new BadRequestException('Formato no permitido. Use JPG, PNG o WEBP');
+      throw new BadRequestException(
+        'Formato no permitido. Use JPG, PNG o WEBP',
+      );
     }
-    if (!(this.config.allowedMimeTypes as readonly string[]).includes(file.mimetype)) {
+    if (
+      !(this.config.allowedMimeTypes as readonly string[]).includes(
+        file.mimetype,
+      )
+    ) {
       throw new BadRequestException('Tipo MIME de imagen no permitido');
     }
   }

@@ -5,12 +5,14 @@ Migración del sistema PHP MVC (`gym-system/`) hacia **NestJS** (backend) + **Fl
 ## Estructura
 
 - `backend-nest/` — API NestJS con JWT, Prisma y módulos de negocio
+- `frontend-flutter/` — App Flutter para socios (Fase 10)
 - `gym-system/` — Sistema PHP legacy (solo local, excluido del repositorio)
 - `docs/` — Documentación de migración por fases
 
 ## Requisitos
 
 - Node.js 20+
+- Flutter 3.44+ (app socio)
 - MySQL/MariaDB
 - PHP 8+ (solo para legacy)
 
@@ -25,6 +27,16 @@ npm run start:dev
 ```
 
 Ver `docs/08-guia-instalacion-backend.md` para detalles completos.
+
+## Inicio rápido (Flutter — socios)
+
+```bash
+cd frontend-flutter
+flutter pub get
+flutter run -d windows
+```
+
+Ver `docs/09-guia-instalacion-flutter.md`. Requiere API en `http://localhost:3000`.
 
 ## Estado de migración
 

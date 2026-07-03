@@ -26,10 +26,6 @@ import { SriXmlSignerService } from './services/sri-xml-signer.service';
     SriRideExportService,
     SriMailService,
   ],
-  exports: [
-    ElectronicReceiptsService,
-    SriConfigService,
-    SriBillingService,
-  ],
+  exports: [ElectronicReceiptsService, SriConfigService, SriBillingService],
 })
 export class BillingSriModule {}

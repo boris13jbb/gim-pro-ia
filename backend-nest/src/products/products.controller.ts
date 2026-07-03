@@ -55,7 +55,9 @@ export class ProductsController {
 
   @Get('low-stock')
   @Roles('admin')
-  @ApiOperation({ summary: 'Productos activos con stock bajo o igual al umbral' })
+  @ApiOperation({
+    summary: 'Productos activos con stock bajo o igual al umbral',
+  })
   findLowStock(@Query() query: LowStockQueryDto) {
     return this.productsService.findLowStock(query);
   }
@@ -77,10 +79,7 @@ export class ProductsController {
   @Patch(':id')
   @Roles('admin')
   @ApiOperation({ summary: 'Actualizar producto (solo admin)' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateProductDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);
   }
 

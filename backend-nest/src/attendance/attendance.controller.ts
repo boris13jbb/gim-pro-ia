@@ -10,7 +10,12 @@ import {
   Query,
   StreamableFile,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RawResponse } from '../common/decorators/raw-response.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';

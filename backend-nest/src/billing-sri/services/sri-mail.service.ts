@@ -74,7 +74,8 @@ export class SriMailService {
     const sequence = String(receipt.correlativo).padStart(9, '0');
     const docNumber = `${receipt.serie}-${sequence}`;
     const systemName = company?.nombre_sistema ?? 'Gym System';
-    const from = process.env.SMTP_FROM ?? company?.email ?? process.env.SMTP_USER;
+    const from =
+      process.env.SMTP_FROM ?? company?.email ?? process.env.SMTP_USER;
 
     const info = await transporter.sendMail({
       from,
@@ -128,8 +129,7 @@ export class SriMailService {
     }
 
     const port = Number(process.env.SMTP_PORT ?? 587);
-    const secure =
-      process.env.SMTP_SECURE === 'true' || String(port) === '465';
+    const secure = process.env.SMTP_SECURE === 'true' || String(port) === '465';
 
     return nodemailer.createTransport({
       host,

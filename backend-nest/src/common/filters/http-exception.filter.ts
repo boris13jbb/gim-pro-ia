@@ -28,10 +28,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? exception.getResponse()
       : { message: 'Internal server error' };
 
-    const message =
-      typeof errorResponse === 'string'
-        ? errorResponse
-        : (errorResponse as any)?.message ?? 'Error';
+    const message = this.extractErrorMessage(errorResponse);
 
     response.status(status).json({
       ok: false,
@@ -43,5 +40,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
       },
     });
   }
-}
 
+  private extractErrorMessage(errorResponse: string | object): string {
+    if (typeof errorResponse === 'string') {
+      return errorResponse;
+    }
+
+    const payload = errorResponse as { message?: string | string[] };
+    if (Array.isArray(payload.message)) {
+      return payload.message.join(', ');
+    }
+    if (typeof payload.message === 'string') {
+      return payload.message;
+    }
+
+    return 'Error';
+  }
+}

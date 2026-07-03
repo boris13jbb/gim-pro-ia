@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { gastos_estado, socios_estado, ventas_metodo_pago } from '@prisma/client';
+import {
+  gastos_estado,
+  socios_estado,
+  ventas_metodo_pago,
+} from '@prisma/client';
 import {
   firstDayOfCurrentMonth,
   getDateRange,

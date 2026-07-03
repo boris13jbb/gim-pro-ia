@@ -37,7 +37,10 @@ export class SriReceiptRepositoryService {
     });
   }
 
-  async saveReceipt(header: SriReceiptHeaderCalculated, lines: SriCalculatedLine[]) {
+  async saveReceipt(
+    header: SriReceiptHeaderCalculated,
+    lines: SriCalculatedLine[],
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const receipt = await tx.comprobantes_electronicos.create({
         data: {

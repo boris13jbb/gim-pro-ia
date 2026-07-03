@@ -1,9 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import {
-  movimientos_inventario_tipo,
-  Prisma,
-  productos,
-} from '@prisma/client';
+import { movimientos_inventario_tipo, Prisma, productos } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 
 export type InventoryStockChangeInput = {
@@ -47,7 +43,9 @@ export class InventoryStockService {
     tx?: PrismaTx,
   ): Promise<InventoryStockChangeResult> {
     if (input.quantityDelta === 0) {
-      throw new BadRequestException('La cantidad del movimiento debe ser distinta de cero');
+      throw new BadRequestException(
+        'La cantidad del movimiento debe ser distinta de cero',
+      );
     }
     if (tx) {
       return this.applyStockChangeInternal(tx, input);
@@ -65,7 +63,9 @@ export class InventoryStockService {
       where: { id: input.productId },
     });
     if (!product) {
-      throw new BadRequestException(`Producto ${input.productId} no encontrado`);
+      throw new BadRequestException(
+        `Producto ${input.productId} no encontrado`,
+      );
     }
 
     const previousStock = product.stock ?? 0;

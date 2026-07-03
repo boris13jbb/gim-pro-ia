@@ -73,20 +73,23 @@ export function drawVerticalBarChart(
     doc
       .fontSize(7)
       .fillColor('#374151')
-      .text(
-        `${currency}${item.value.toFixed(0)}`,
-        barX - 4,
-        barY - 10,
-        { width: barWidth + 8, align: 'center' },
-      );
+      .text(`${currency}${item.value.toFixed(0)}`, barX - 4, barY - 10, {
+        width: barWidth + 8,
+        align: 'center',
+      });
 
     doc
       .fontSize(7)
       .fillColor('#6B7280')
-      .text(formatMonthLabel(item.label), barX - 6, chartTop + chartHeight + 4, {
-        width: barWidth + 12,
-        align: 'center',
-      });
+      .text(
+        formatMonthLabel(item.label),
+        barX - 6,
+        chartTop + chartHeight + 4,
+        {
+          width: barWidth + 12,
+          align: 'center',
+        },
+      );
   });
 
   return y + height;
@@ -115,7 +118,10 @@ export function drawHorizontalBarChart(
   let cursorY = y + 16;
 
   if (filtered.length === 0) {
-    doc.fontSize(9).fillColor('#666666').text('Sin datos en el período', x, cursorY);
+    doc
+      .fontSize(9)
+      .fillColor('#666666')
+      .text('Sin datos en el período', x, cursorY);
     return cursorY + 20;
   }
 
@@ -127,9 +133,12 @@ export function drawHorizontalBarChart(
     const barWidth = Math.max(6, (item.value / maxValue) * barAreaWidth);
     const percent = total > 0 ? ((item.value / total) * 100).toFixed(0) : '0';
 
-    doc.fontSize(8).fillColor('#374151').text(capitalize(item.label), x, cursorY + 4, {
-      width: labelWidth,
-    });
+    doc
+      .fontSize(8)
+      .fillColor('#374151')
+      .text(capitalize(item.label), x, cursorY + 4, {
+        width: labelWidth,
+      });
 
     const barX = x + labelWidth;
     doc.save();

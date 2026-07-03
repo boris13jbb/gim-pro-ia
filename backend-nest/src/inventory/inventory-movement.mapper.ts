@@ -1,9 +1,14 @@
-import { movimientos_inventario, movimientos_inventario_tipo } from '@prisma/client';
+import {
+  movimientos_inventario,
+  movimientos_inventario_tipo,
+} from '@prisma/client';
 
-export function mapInventoryMovement(row: movimientos_inventario & {
-  productos?: { id: number; nombre: string; codigo: string | null } | null;
-  usuarios?: { id: number; nombre: string | null } | null;
-}) {
+export function mapInventoryMovement(
+  row: movimientos_inventario & {
+    productos?: { id: number; nombre: string; codigo: string | null } | null;
+    usuarios?: { id: number; nombre: string | null } | null;
+  },
+) {
   return {
     id: row.id,
     productId: row.producto_id,
