@@ -1,3 +1,6 @@
+# Sistema PHP legacy (solo local, no subir a GitHub)
+gym-system/
+
 # Dependencias
 node_modules/
 vendor/
@@ -19,7 +22,6 @@ build/
 # Uploads y archivos en runtime
 uploads/
 backend-nest/uploads/
-gym-system/public/cert/
 
 # Logs y temporales
 *.log

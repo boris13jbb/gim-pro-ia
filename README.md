@@ -5,7 +5,7 @@ Migración del sistema PHP MVC (`gym-system/`) hacia **NestJS** (backend) + **Fl
 ## Estructura
 
 - `backend-nest/` — API NestJS con JWT, Prisma y módulos de negocio
-- `gym-system/` — Sistema PHP legacy (referencia)
+- `gym-system/` — Sistema PHP legacy (solo local, excluido del repositorio)
 - `docs/` — Documentación de migración por fases
 
 ## Requisitos
