@@ -301,3 +301,59 @@ npm run audit:phase-11
 ```
 
 Última ejecución: **6/6 OK** (`npm run audit:phase-11`, sin `GEMINI_API_KEY`).
+
+## Fase 10 (UI) — Sistema visual global Material 3
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | Tema global | `flutter analyze` | — | sin errores nuevos | OK (solo avisos preexistentes) | OK |
+| 10 | Todas las pantallas | Aplicar `AppTheme.light()` | — | estilo consistente heredado | OK (propagado por tema) | OK |
+| 10 | Login | Ver AppBar/inputs/botón | — | inputs y botón con nuevo estilo | Pendiente manual | Pendiente |
+| 10 | Inicio | Tarjetas y `NavigationBar` | — | tarjetas con borde, nav con indicador | Pendiente manual | Pendiente |
+| 10 | Carnet QR | Fondo blanco del QR | — | QR legible sobre blanco | Conservado a propósito | OK |
+| 10 | Perfil | Chips de estado / `ListTile` | — | chips y listas con nuevo estilo | Pendiente manual | Pendiente |
+| 10 | Asistente IA | Burbujas y `MaterialBanner` | — | contraste correcto | Pendiente manual | Pendiente |
+
+## Fase 10 (UI) — Modo oscuro (Material 3)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | Tema | `flutter analyze` archivos modificados | — | sin issues | No issues found | OK |
+| 10 | App | SO en oscuro | — | app en modo oscuro | Pendiente manual | Pendiente |
+| 10 | App | SO en claro | — | app en modo claro | Pendiente manual | Pendiente |
+| 10 | Login/Botones | Contraste texto/íconos en oscuro | — | legible | Tokens adaptativos | OK (por diseño) |
+| 10 | Carnet QR | QR + chip acceso en oscuro | — | QR blanco legible, chip con contraste | `_AccessChip` translúcido | OK (por diseño) |
+| 10 | Progreso | Ejes de gráfica en oscuro | — | números legibles | `fl_chart` estilo por defecto | Revisar manual |
+
+## Fase 10 (UI) — Selector manual de tema en Perfil
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | Perfil | `flutter analyze` archivos tema | — | sin issues | No issues found | OK |
+| 10 | Perfil | Seleccionar "Claro" | — | app cambia a claro al instante | Pendiente manual | Pendiente |
+| 10 | Perfil | Seleccionar "Oscuro" | — | app cambia a oscuro al instante | Pendiente manual | Pendiente |
+| 10 | Perfil | Seleccionar "Sistema" | — | app sigue el tema del SO | Pendiente manual | Pendiente |
+| 10 | Perfil | Reiniciar app tras elegir tema | — | conserva la preferencia | Pendiente manual | Pendiente |
+
+## Fase 10 (UI) — Rediseño estilo fitness oscuro (acento naranja)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | Tema | `flutter analyze` archivos modificados | — | sin issues | No issues found | OK |
+| 10 | App | Primer arranque | — | abre en oscuro por defecto | Pendiente manual | Pendiente |
+| 10 | Login/Home | Botón primario | — | píldora naranja, texto/spinner oscuro | Pendiente manual | Pendiente |
+| 10 | Inicio/Perfil | Tarjetas y `NavigationBar` | — | tarjetas redondeadas, nav con acento naranja | Pendiente manual | Pendiente |
+| 10 | Progreso | Gráficas en oscuro | — | líneas y ejes legibles | Ejes/rejilla adaptados al tema | OK (por diseño) |
+| 10 | Progreso | `flutter analyze` gráficas | — | sin issues | No issues found | OK |
+| 10 | Progreso | Ver gráficas Peso/% Grasa | — | línea naranja / celeste + relleno | Pendiente manual | Pendiente |
+
+## Fase 10 (UI) — Icono y splash de marca
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 10 | Icono | `dart run flutter_launcher_icons` | — | genera iconos multiplataforma | Successfully generated | OK |
+| 10 | Splash | `dart run flutter_native_splash:create` | — | genera splash multiplataforma | Native splash complete | OK |
+| 10 | Login | `flutter analyze` login | — | sin issues | No issues found | OK |
+| 10 | Login | Ver logo de marca | — | mancuerna naranja centrada | Pendiente manual | Pendiente |
+| 10 | Launcher | Icono en el dispositivo tras reinstalar | — | icono naranja/oscuro | Pendiente manual | Pendiente |
+| 10 | Arranque | Splash al abrir la app | — | fondo oscuro + logo naranja | Pendiente manual | Pendiente |

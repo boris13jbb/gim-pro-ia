@@ -52,6 +52,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -64,10 +66,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Recursos de marca (logo Iron Gym) usados por la app y los generadores.
+  assets:
+    - assets/branding/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -94,3 +95,33 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Configuración del icono de la app (flutter_launcher_icons).
+# icon.png: icono completo con fondo oscuro (iOS/web/Windows/legacy Android).
+# logo_mark.png: marca transparente para el primer plano del icono adaptativo
+# Android, sobre fondo oscuro de marca.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  windows:
+    generate: true
+    icon_size: 48
+  image_path: "assets/branding/icon.png"
+  adaptive_icon_background: "#0E0F13"
+  adaptive_icon_foreground: "assets/branding/logo_mark.png"
+  remove_alpha_ios: true
+
+# Configuración de la pantalla de carga (flutter_native_splash).
+# Fondo oscuro de marca con la mancuerna naranja centrada.
+flutter_native_splash:
+  color: "#0E0F13"
+  image: "assets/branding/logo_mark.png"
+  android_12:
+    color: "#0E0F13"
+    image: "assets/branding/logo_mark.png"
+    icon_background_color: "#0E0F13"
+  android: true
+  ios: true
+  web: false

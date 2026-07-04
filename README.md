@@ -38,6 +38,10 @@ flutter run -d windows
 
 Ver `docs/09-guia-instalacion-flutter.md`. Requiere API en `http://localhost:3000`.
 
+## Comandos de ejecución
+
+Ver **`docs/13-comandos-ejecucion.md`** — referencia completa (instalación, backend, Flutter, auditorías, Git).
+
 ## Estado de migración
 
 Consultar `docs/04-plan-migracion-fases.md` y `docs/05-bitacora-migracion.md`.

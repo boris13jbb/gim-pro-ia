@@ -21,6 +21,19 @@
 | 2026-07-02 | Throttle configurable vía `THROTTLE_*` | Evita 429 en auditoría y pruebas; login default 30/min (R07) |
 | 2026-07-02 | Script `db:push:legacy` | Flujo documentado para BD importada sin reset (R08) |
 | 2026-07-02 | Auditoría JWT expirado en `audit-phase-02` | Firma token con `expiresIn: -1` y valida 401 (R10) |
+| 2026-07-03 | Sistema visual global centralizado en `AppTheme` (Material 3) | Un solo punto de estilos (colores, tipografía, componentes); las pantallas heredan vía `Theme.of(context)` sin duplicar estilos |
+| 2026-07-03 | Mantener identidad de marca (azul `#1B2A4A` + rojo `#E63946`) sobre `ColorScheme.fromSeed` | Paleta accesible generada por Material 3 conservando colores de Iron Gym |
+| 2026-07-03 | Reemplazar grises fijos por tokens del tema (`onSurfaceVariant`) en widgets compartidos | Consistencia visual y base lista para futuro modo oscuro |
+| 2026-07-04 | Modo oscuro habilitado (`AppTheme.dark()` + `themeMode: ThemeMode.system`) | Diseño moderno adaptado a la preferencia del SO; un único generador `_buildTheme` para claro y oscuro sin duplicar estilos |
+| 2026-07-04 | Primeros planos con tokens del `ColorScheme` y marca fija solo donde siempre es legible | `colorScheme.primary` en botones/listas se aclara en oscuro; azul/rojo fijos solo en AppBar, botón primario, navegación, SnackBar y FAB |
+| 2026-07-04 | Chip de acceso QR con color semántico translúcido (`_AccessChip`) | Verde/naranja al 15% sobre `surface` con texto `onSurface`: legible en claro y oscuro; el QR se mantiene sobre fondo blanco |
+| 2026-07-04 | Selector manual de tema en Perfil (`ThemeProvider` + `ThemeStorage`) | Estado en provider, persistencia en `ThemeStorage`; UI (`SegmentedButton`) solo lee/dispara. Flutter solo presentación |
+| 2026-07-04 | Persistir preferencia de tema con `flutter_secure_storage` (clave `app_theme_mode`) | Reutiliza dependencia existente; evita añadir `shared_preferences`. Valor no sensible = nombre del enum |
+| 2026-07-04 | `SegmentedButton` en lugar de `Radio`/`RadioListTile` | Evita APIs deprecadas (`groupValue`/`onChanged`) en la versión actual del SDK; control Material 3 compacto |
+| 2026-07-04 | Rediseño a estilo fitness oscuro con acento naranja/ámbar (`#F5A524`) | Referencia visual del usuario (estilo FITFINITY); botones píldora, tarjetas redondeadas, AppBar integrada al fondo |
+| 2026-07-04 | Oscuro como tema por defecto (primer arranque e inicial del provider) | Es el estilo principal solicitado; el selector de Perfil permite claro/sistema |
+| 2026-07-04 | Acento naranja fijo en botón primario/FAB/progreso; enlaces con `colorScheme.primary` | En oscuro primary = naranja (legible); en claro primary = azul tinta (contraste sobre blanco) |
+| 2026-07-04 | Spinners de carga dentro del botón naranja en tono oscuro (`Colors.black87`) | Contraste correcto del indicador sobre el ámbar en ambos temas |
 
 ---
 
@@ -127,3 +140,35 @@ La tabla legacy `suscripciones` y el PHP `/suscripciones/*` no se renombran. Sol
 ### Riesgo
 ### Pruebas
 ```
+
+---
+
+## DT — Identidad visual: icono y splash (Fase 10 UI)
+
+### Decisión
+Generar el icono de la app y el splash con los paquetes estándar `flutter_launcher_icons` y `flutter_native_splash` a partir de una única fuente de imágenes en `frontend-flutter/assets/branding/`, en lugar de editar a mano los recursos nativos de cada plataforma.
+
+### Motivo
+- Evita duplicar/editar manualmente decenas de recursos por densidad y plataforma (Android, iOS, Web, Windows).
+- Reproducible: al cambiar la marca, se regenera con dos comandos.
+- Coherencia con la paleta ya definida en `app_theme.dart` (acento `#F5A524`, fondo `#0E0F13`).
+
+### Detalles
+- `image_path`: `assets/branding/icon.png` (icono completo con fondo oscuro; sirve para iOS/Web/Windows y Android legacy).
+- Icono adaptativo Android: `adaptive_icon_foreground` = `logo_mark.png` (transparente) sobre `adaptive_icon_background` = `#0E0F13`.
+- `remove_alpha_ios: true` (iOS no admite transparencia en el icono).
+- Splash: fondo `#0E0F13` + `logo_mark.png` centrado, con soporte de modo noche y Android 12+.
+
+### Fuente del logo
+Las imágenes de `assets/branding/` se generan por código con `tool/generate_branding.py` (Pillow) para garantizar **transparencia real** y bordes suaves. No usar imágenes con la cuadrícula de transparencia pintada (fue el defecto del primer intento con IA).
+
+### Comandos de regeneración
+```bash
+cd frontend-flutter
+python tool/generate_branding.py        # regenera icon.png y logo_mark.png
+dart run flutter_launcher_icons
+dart run flutter_native_splash:create
+```
+
+### Riesgo / Nota
+El icono y el splash solo se ven tras detener `flutter run` y **reinstalar** la app (no se aplican con hot reload/restart).

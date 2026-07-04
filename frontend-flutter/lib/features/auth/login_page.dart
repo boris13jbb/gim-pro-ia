@@ -54,7 +54,12 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                Icon(Icons.fitness_center, size: 72, color: Theme.of(context).colorScheme.primary),
+                Center(
+                  child: Image.asset(
+                    'assets/branding/logo_mark.png',
+                    height: 88,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Iron Gym',
@@ -118,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87),
                         )
                       : const Text('Iniciar sesión'),
                 ),
@@ -127,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                   'API: ${ApiConfig.baseUrl}',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

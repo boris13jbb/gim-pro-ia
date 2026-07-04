@@ -58,13 +58,14 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade500),
+            Icon(Icons.inbox_outlined, size: 48, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
             if (subtitle != null) ...[
@@ -72,7 +73,7 @@ class EmptyState extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
             ],
           ],

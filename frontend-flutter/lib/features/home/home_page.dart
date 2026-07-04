@@ -235,7 +235,7 @@ class _HomePageState extends State<HomePage> {
 
                         strokeWidth: 2,
 
-                        color: Colors.white,
+                        color: Colors.black87,
 
                       ),
 

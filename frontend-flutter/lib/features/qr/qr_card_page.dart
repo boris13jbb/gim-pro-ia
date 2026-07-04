@@ -81,6 +81,8 @@ class _QrCardPageState extends State<QrCardPage> {
                   const SizedBox(height: 4),
                   Text('DNI: ${card.member.dni}'),
                   const SizedBox(height: 20),
+                  // El QR se muestra siempre sobre fondo blanco para garantizar
+                  // la legibilidad del escáner, independientemente del tema.
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -95,20 +97,42 @@ class _QrCardPageState extends State<QrCardPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Chip(
-                    label: Text(
-                      card.canAccess ? 'Acceso permitido' : 'Acceso no permitido',
-                    ),
-                    backgroundColor: card.canAccess
-                        ? Colors.green.shade50
-                        : Colors.orange.shade50,
-                  ),
+                  _AccessChip(canAccess: card.canAccess),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Chip de estado de acceso legible en tema claro y oscuro.
+///
+/// Usa un color semántico (verde/naranja) con fondo translúcido sobre la
+/// superficie del tema, de modo que el texto ([onSurface]) mantiene contraste
+/// tanto en modo claro como oscuro.
+class _AccessChip extends StatelessWidget {
+  const _AccessChip({required this.canAccess});
+
+  final bool canAccess;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor = canAccess ? Colors.green : Colors.orange;
+
+    return Chip(
+      avatar: Icon(
+        canAccess ? Icons.check_circle : Icons.error_outline,
+        color: statusColor,
+        size: 18,
+      ),
+      label: Text(canAccess ? 'Acceso permitido' : 'Acceso no permitido'),
+      labelStyle: TextStyle(color: colorScheme.onSurface),
+      backgroundColor: statusColor.withValues(alpha: 0.15),
+      side: BorderSide(color: statusColor.withValues(alpha: 0.4)),
     );
   }
 }

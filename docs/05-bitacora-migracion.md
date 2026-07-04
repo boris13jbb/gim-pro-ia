@@ -1273,3 +1273,345 @@ Eliminar módulo `ai-assistant`, tablas AI y pestaña Flutter; revertir schema P
 
 ### Próximo paso
 Configurar `GEMINI_API_KEY`, prueba manual chat; slice 2 WebSockets tras aprobación.
+
+---
+
+## 2026-07-03 — Fase 10 (UI): Sistema visual global Material 3
+
+### Cambio realizado
+Se modernizó el sistema visual global de la app Flutter centralizándolo en `AppTheme.light()` (Material 3): paleta derivada con `ColorScheme.fromSeed` manteniendo la marca (azul `#1B2A4A` + rojo `#E63946`), tipografía con jerarquía reforzada y estilos de componentes (AppBar, Card con borde sutil, inputs, botones `Filled`/`Outlined`/`Text`, `NavigationBar`, `Chip`, `ListTile`, `SnackBar`, `Dialog`, `BottomSheet`, `Divider`, `FAB`, `ProgressIndicator`). Documentación consultada con Context7 (`/flutter/website`, theming Material 3). Como las pantallas usan `Theme.of(context)`, el rediseño se propaga sin tocar su lógica.
+
+### Archivos modificados
+- `frontend-flutter/lib/core/theme/app_theme.dart` (reescrito, tema global completo)
+- `frontend-flutter/lib/widgets/state_views.dart` (grises fijos → `onSurfaceVariant`)
+- `frontend-flutter/lib/features/home/membership_status_card.dart` (gris fijo → `onSurfaceVariant`)
+- `frontend-flutter/lib/features/auth/login_page.dart` (gris fijo → `onSurfaceVariant`)
+- `docs/10-decisiones-tecnicas.md`, `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Archivos creados
+- Ninguno
+
+### Funcionalidad afectada
+Solo capa de presentación de toda la app de socios. Sin cambios en lógica, navegación, servicios ni contratos de API.
+
+### Código reutilizado
+`AppTheme` existente (misma firma `light()` usada por `app.dart`); tokens de `ColorScheme` en lugar de colores fijos.
+
+### Duplicados revisados
+Sin nuevos estilos por pantalla: todo el estilo vive en el tema. Se eliminaron colores grises repetidos en widgets compartidos.
+
+### Optimizaciones realizadas
+Radios y estilos de componentes centralizados; menos colores fijos; base preparada para un futuro modo oscuro.
+
+### Comentarios agregados en el código
+Explicación de la paleta de marca sobre `fromSeed`, propósito de cada tema de componente y nota de arquitectura (Flutter solo presentación).
+
+### Pruebas realizadas
+- `flutter analyze` → sin problemas nuevos en archivos modificados (14 avisos preexistentes en services/providers, no relacionados)
+- Linter del editor sobre archivos modificados → sin errores
+- Pendiente: verificación visual manual en Windows/Chrome
+
+### Resultado
+Pendiente de aprobación — cambio visual listo para probar.
+
+### Riesgos detectados
+- Cambio solo visual; bajo riesgo. Verde/naranja de estado y fondo blanco del QR se conservan a propósito (legibilidad/escáner).
+
+### Rollback
+Revertir `git checkout -- frontend-flutter/lib/core/theme/app_theme.dart` y los 3 widgets modificados.
+
+### Próximo paso
+Prueba visual manual del usuario; si se aprueba, opcionalmente habilitar modo oscuro (`AppTheme.dark()` + `themeMode`).
+
+---
+
+## 2026-07-04 — Fase 10 (UI): Modo oscuro (Material 3)
+
+### Cambio realizado
+Se habilitó el modo oscuro. `AppTheme` se refactorizó a un único generador `_buildTheme(colorScheme, scaffoldBackground)` que produce tanto `light()` como `dark()` sin duplicar estilos. Los primeros planos (texto/íconos de botones y listas) usan tokens adaptativos del `ColorScheme` (p. ej. `colorScheme.primary`), mientras que los colores de marca fijos (azul/rojo) se reservan a superficies siempre legibles (AppBar, botón primario, navegación seleccionada, SnackBar, FAB). La tipografía elige base clara/oscura según el brillo. En `app.dart` se añadió `darkTheme` + `themeMode: ThemeMode.system`.
+
+### Archivos modificados
+- `frontend-flutter/lib/core/theme/app_theme.dart` (refactor: `light()` + `dark()` con generador común)
+- `frontend-flutter/lib/app.dart` (`darkTheme` + `themeMode: ThemeMode.system`)
+- `frontend-flutter/lib/features/qr/qr_card_page.dart` (nuevo `_AccessChip` legible en ambos modos; QR se mantiene en blanco)
+- `docs/10-decisiones-tecnicas.md`, `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Archivos creados
+- Ninguno (widget `_AccessChip` privado dentro de `qr_card_page.dart`)
+
+### Funcionalidad afectada
+Solo presentación. Sin cambios en lógica, navegación, servicios ni API. La app respeta el modo claro/oscuro del sistema operativo.
+
+### Código reutilizado
+Un solo `_buildTheme` compartido por ambos temas; tokens de `ColorScheme` en lugar de colores fijos.
+
+### Duplicados revisados
+Se evitó duplicar ~150 líneas de estilos entre claro y oscuro usando el generador común. El chip de acceso QR se extrajo a un widget reutilizable en lugar de repetir lógica de color.
+
+### Optimizaciones realizadas
+Generador de tema único; contraste garantizado por brillo; base preparada para un futuro selector manual de tema si se requiere.
+
+### Comentarios agregados en el código
+Explicación de qué colores son fijos de marca vs. adaptativos, motivo del fondo blanco del QR y del chip translúcido, y selección de tipografía por brillo.
+
+### Pruebas realizadas
+- `flutter analyze` (archivos modificados) → **No issues found**
+- `flutter analyze` (proyecto) → solo 14 avisos preexistentes en services/providers (no relacionados)
+- Pendiente: verificación visual manual alternando modo claro/oscuro del SO
+
+### Resultado
+Pendiente de aprobación — modo oscuro listo para probar.
+
+### Riesgos detectados
+- Cambio solo visual; bajo riesgo. Verificar contraste de números de ejes en gráficas `fl_chart` en modo oscuro (usan estilo por defecto; legibles pero mejorables).
+
+### Rollback
+Revertir `app_theme.dart`, `app.dart` y `qr_card_page.dart` con `git checkout --`. Para desactivar solo el oscuro sin revertir el tema: fijar `themeMode: ThemeMode.light` en `app.dart`.
+
+### Próximo paso
+Prueba visual del usuario alternando el tema del sistema; opcional: selector manual de tema en Perfil.
+
+---
+
+## 2026-07-04 — Fase 10 (UI): Selector manual de tema en Perfil
+
+### Cambio realizado
+Se agregó un selector de tema (Sistema / Claro / Oscuro) en la pantalla Perfil. Estado global en `ThemeProvider` (ChangeNotifier) y persistencia en `ThemeStorage` (reutiliza `flutter_secure_storage`, clave `app_theme_mode`). En `app.dart` se instancia el provider, se carga la preferencia guardada al inicio y `MaterialApp.router` se envuelve en `Consumer<ThemeProvider>` para aplicar `themeMode`. UI con `SegmentedButton` (Material 3, sin APIs deprecadas). Los temas claro/oscuro se cachean en `app.dart` para no reconstruirlos en cada rebuild.
+
+### Archivos modificados
+- `frontend-flutter/lib/app.dart` (provider de tema + `Consumer` + temas cacheados)
+- `frontend-flutter/lib/features/profile/profile_page.dart` (tarjeta "Apariencia" con `_AppearanceCard`)
+- `docs/10-decisiones-tecnicas.md`, `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Archivos creados
+- `frontend-flutter/lib/services/theme_storage.dart`
+- `frontend-flutter/lib/providers/theme_provider.dart`
+
+### Funcionalidad afectada
+Preferencia de apariencia de la app. Sin cambios en lógica de negocio, navegación ni API. La selección persiste entre reinicios.
+
+### Código reutilizado
+Patrón de almacenamiento de `AuthStorage` (constructor con `?? default`), patrón de `ChangeNotifier` de `AuthProvider`, `MultiProvider` existente.
+
+### Duplicados revisados
+Sin duplicar lógica de tema: un único `AppTheme` genera claro/oscuro y un único `ThemeProvider` centraliza el estado. El control de selección se extrajo a `_AppearanceCard`.
+
+### Optimizaciones realizadas
+Temas construidos una sola vez (cacheados); `setThemeMode` evita trabajo si no hay cambio; persistencia con dependencia ya presente (sin añadir paquetes).
+
+### Comentarios agregados en el código
+Propósito de `ThemeStorage`/`ThemeProvider`, motivo de reutilizar `flutter_secure_storage`, y nota de que la UI solo lee/dispara (sin lógica).
+
+### Pruebas realizadas
+- `flutter analyze` (archivos nuevos y modificados) → **No issues found**
+- Linter del editor → sin errores
+- Pendiente: prueba manual (cambiar tema en Perfil y reiniciar la app para verificar persistencia)
+
+### Resultado
+Pendiente de aprobación — selector de tema listo para probar.
+
+### Riesgos detectados
+- Bajo riesgo (solo presentación). Posible parpadeo mínimo al iniciar mientras se carga la preferencia (arranca en "sistema").
+
+### Rollback
+Revertir `app.dart` y `profile_page.dart` y eliminar `theme_provider.dart` y `theme_storage.dart` con `git checkout --` / borrado. El resto del tema (claro/oscuro) sigue funcionando por SO.
+
+### Próximo paso
+Prueba manual del usuario; opcional: afinar ejes de gráficas `fl_chart` en modo oscuro.
+
+---
+
+## 2026-07-04 — Fase 10 (UI): Rediseño estilo fitness oscuro (acento naranja)
+
+### Cambio realizado
+A partir de referencias visuales del usuario (estilo FITFINITY), se rediseñó `AppTheme` a una estética fitness oscura: fondo casi negro neutro, tarjetas oscuras redondeadas, botones tipo píldora, AppBar integrada al fondo (sin barra de color), tipografía marcada y acento naranja/ámbar (`#F5A524`). El tema oscuro pasa a ser el principal (por defecto en el primer arranque y como valor inicial del provider), conservando el tema claro accesible desde el selector de Perfil. Ambos temas se generan con el mismo `_buildTheme` (sin duplicar). Se ajustaron los spinners dentro del botón naranja a un tono oscuro para contraste.
+
+### Archivos modificados
+- `frontend-flutter/lib/core/theme/app_theme.dart` (rediseño de paleta y componentes; light + dark)
+- `frontend-flutter/lib/services/theme_storage.dart` (por defecto: oscuro)
+- `frontend-flutter/lib/providers/theme_provider.dart` (inicial: oscuro)
+- `frontend-flutter/lib/features/home/home_page.dart` y `.../auth/login_page.dart` (spinner `Colors.black87` sobre botón naranja)
+- `docs/10-decisiones-tecnicas.md`, `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Archivos creados
+- Ninguno
+
+### Funcionalidad afectada
+Solo presentación (toda la app). Sin cambios en lógica, navegación, servicios ni API. El selector de tema sigue funcionando (Sistema/Claro/Oscuro).
+
+### Código reutilizado
+`_buildTheme` único para ambos temas; `ThemeProvider`/`ThemeStorage` existentes; tokens del `ColorScheme`. Sin nuevos widgets ni duplicados.
+
+### Duplicados revisados
+No se duplicó estilo entre claro y oscuro; no se crearon componentes repetidos. Se reutilizó el `_AccessChip` del carnet y el selector de Perfil.
+
+### Optimizaciones realizadas
+Estilos centralizados; acento y radios como constantes; contraste garantizado por brillo; sin dependencias nuevas.
+
+### Comentarios agregados en el código
+Motivo del acento naranja y del texto oscuro sobre él, superficies neutras en oscuro, y qué colores son fijos vs adaptativos.
+
+### Pruebas realizadas
+- `flutter analyze` (6 archivos modificados) → **No issues found**
+- Pendiente: verificación visual manual (oscuro por defecto, cambio a claro/sistema, todas las pantallas)
+
+### Resultado
+Pendiente de aprobación — rediseño listo para probar.
+
+### Riesgos detectados
+- Bajo (solo presentación). Revisar en oscuro: ejes de gráficas `fl_chart` (estilo por defecto) y contraste general.
+
+### Rollback
+Revertir `app_theme.dart`, `theme_storage.dart`, `theme_provider.dart`, `home_page.dart`, `login_page.dart` con `git checkout --`.
+
+### Próximo paso
+Prueba visual del usuario; opcional: afinar ejes `fl_chart` en oscuro y aplicar acento naranja a las líneas de las gráficas.
+
+---
+
+## 2026-07-04 — Fase 10 (UI): Gráficas de progreso adaptadas al tema oscuro
+
+### Cambio realizado
+Se afinó `_MetricChart` en la pantalla de Progreso (`fl_chart`) para el estilo oscuro: rejilla, bordes y ejes usan tokens del tema (`outlineVariant`, `onSurfaceVariant`) y ahora son legibles en claro y oscuro. La línea de "Peso" usa el acento naranja (`AppTheme.accent`) y la de "% Grasa" un celeste (`#4FC3F7`) que contrasta en ambos temas; se añadió relleno sutil bajo la curva y puntos del mismo color.
+
+### Archivos modificados
+- `frontend-flutter/lib/features/body_progress/body_progress_page.dart`
+- `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`
+
+### Archivos creados
+- Ninguno
+
+### Funcionalidad afectada
+Solo presentación de las gráficas de progreso. Sin cambios en datos, lógica ni API.
+
+### Código reutilizado
+`AppTheme.accent` (constante ya existente), tokens de `ColorScheme`, mismo widget `_MetricChart` (sin duplicar).
+
+### Duplicados revisados
+Un único estilo de eje/rejilla reutilizado en ambos ejes vía `axisLabelStyle`/`gridColor`.
+
+### Optimizaciones realizadas
+Estilos de eje calculados una vez por build; colores derivados del tema.
+
+### Comentarios agregados en el código
+Motivo del estilo de ejes adaptativo y del relleno bajo la curva.
+
+### Pruebas realizadas
+- `flutter analyze` (archivo modificado) → **No issues found**
+- Pendiente: verificación visual manual de la pantalla Progreso en claro/oscuro
+
+### Resultado
+Pendiente de aprobación — gráficas listas para probar.
+
+### Riesgos detectados
+- Bajo (solo presentación).
+
+### Rollback
+Revertir `body_progress_page.dart` con `git checkout --`.
+
+### Próximo paso
+Prueba visual del usuario en la pantalla Progreso.
+
+---
+
+## 2026-07-04 — Fase 10 (UI): Icono y splash de marca (naranja/oscuro)
+
+### Cambio realizado
+Se creó la identidad visual de la app (mancuerna naranja `#F5A524` sobre fondo oscuro `#0E0F13`) y se generaron los recursos nativos por plataforma:
+- **Icono de la app** con `flutter_launcher_icons`: Android (mipmaps `mdpi`–`xxxhdpi` + icono adaptativo con primer plano transparente y fondo `#0E0F13`), iOS (`AppIcon.appiconset` completo), Web y Windows.
+- **Splash nativo** con `flutter_native_splash`: fondo `#0E0F13` con la marca centrada; incluye densidades, variante de modo noche y soporte Android 12+.
+- Se reemplazó el ícono genérico del login (`Icons.fitness_center`) por el logo de marca (`assets/branding/logo_mark.png`) para coherencia con el splash.
+
+### Archivos creados
+- `frontend-flutter/assets/branding/icon.png` (icono completo, fondo oscuro)
+- `frontend-flutter/assets/branding/logo_mark.png` (marca transparente)
+- Recursos generados: `android/app/src/main/res/mipmap-*/ic_launcher.png`, `mipmap-anydpi-v26/ic_launcher.xml`, `values/colors.xml`, `drawable*/splash.png` y `android12splash.png` (incl. `-night-*`), `values-v31/`, `values-night-v31/`, `ios/Runner/Assets.xcassets/AppIcon.appiconset/*`, `LaunchScreen`/`Info.plist` actualizados, iconos Web y Windows.
+
+### Archivos modificados
+- `frontend-flutter/pubspec.yaml` (dev deps + config de icono y splash + assets de marca)
+- `frontend-flutter/lib/features/auth/login_page.dart` (logo de marca)
+- `docs/06-checklist-pruebas.md`, `docs/fases/fase-10-flutter-app-cliente.md`, `docs/10-decisiones-tecnicas.md`
+
+### Funcionalidad afectada
+Solo identidad visual (icono, splash, logo del login). Sin cambios en datos, lógica ni API.
+
+### Código reutilizado
+Paleta de marca ya definida en `app_theme.dart` (`#F5A524`, `#0E0F13`); generadores estándar en vez de editar recursos nativos a mano.
+
+### Duplicados revisados
+Una sola fuente de imágenes en `assets/branding/`; sin recursos nativos editados manualmente ni duplicados.
+
+### Optimizaciones realizadas
+Icono adaptativo (primer plano transparente + fondo de marca) para verse correcto en máscaras Android; `remove_alpha_ios` para cumplir requisitos de iOS.
+
+### Comentarios agregados en el código
+Configuración del `pubspec.yaml` comentada (rol de cada imagen y de los bloques de icono/splash).
+
+### Pruebas realizadas
+- `dart run flutter_launcher_icons` → **Successfully generated launcher icons**
+- `dart run flutter_native_splash:create` → **Native splash complete**
+- `flutter analyze` (login) → **No issues found**
+- Verificación de archivos generados (Android mipmaps, iOS AppIcon set, splash en todas las densidades)
+- Pendiente: verificación visual en dispositivo tras reinstalar la app
+
+### Resultado
+Pendiente de aprobación — icono y splash listos para probar (requieren rebuild/reinstalación).
+
+### Riesgos detectados
+- Bajo. El icono/splash solo se ve tras detener `flutter run` y reinstalar (no aparece con hot reload/restart).
+
+### Rollback
+Revertir `pubspec.yaml` y `login_page.dart`; eliminar `assets/branding/` y los recursos generados con `git checkout -- .` (los recursos nativos estaban versionados).
+
+### Próximo paso
+Reinstalar la app y validar icono en el launcher y splash al abrir. Cierre de Fase 10 a la espera de aprobación.
+
+---
+
+## 2026-07-04 — Fase 10 (UI, fix): Logo con transparencia real (splash profesional)
+
+### Cambio realizado
+El `logo_mark.png` inicial (generado por IA) tenía la cuadrícula de transparencia **pintada como píxeles reales**, por lo que el splash mostraba un recuadro con cuadros. Se reemplazó por un logo dibujado por código con **canal alfa real** (vectorial, simétrico y con anti-aliasing), y se regeneraron icono y splash.
+
+### Archivos creados
+- `frontend-flutter/tool/generate_branding.py` (generador reproducible del logo con Pillow)
+
+### Archivos modificados
+- `frontend-flutter/assets/branding/logo_mark.png` (ahora transparente de verdad)
+- `frontend-flutter/assets/branding/icon.png` (redibujado, fondo oscuro opaco edge-to-edge)
+- Recursos regenerados de icono y splash (Android/iOS/Web/Windows)
+- `docs/10-decisiones-tecnicas.md`
+
+### Funcionalidad afectada
+Solo identidad visual (splash e icono adaptativo). Sin cambios de lógica ni API.
+
+### Código reutilizado
+Misma paleta de marca (`#F5A524`, `#0E0F13`) y los mismos generadores `flutter_launcher_icons` / `flutter_native_splash`.
+
+### Duplicados revisados
+Se sustituyeron las imágenes en su misma ruta; no se crearon variantes nuevas.
+
+### Optimizaciones realizadas
+Supersampling x4 + LANCZOS para bordes suaves; logo compacto dentro de la zona segura del icono adaptativo Android para evitar recortes.
+
+### Comentarios agregados en el código
+Script documentado (rol de cada imagen, zona segura, motivo del supersampling).
+
+### Pruebas realizadas
+- `python tool/generate_branding.py` → genera ambas imágenes
+- Inspección de `logo_mark.png`/`icon.png` (transparencia real confirmada)
+- `dart run flutter_launcher_icons` y `dart run flutter_native_splash:create` → OK
+- Inspección de `drawable-xxxhdpi/splash.png` (mancuerna transparente, sin cuadrícula)
+- Pendiente: verificación en dispositivo tras reinstalar
+
+### Resultado
+Pendiente de aprobación — splash e icono corregidos, listos para probar.
+
+### Riesgos detectados
+- Bajo. Requiere reinstalar la app para ver el cambio.
+
+### Rollback
+Revertir `assets/branding/*` y los recursos generados con `git checkout -- .`.
+
+### Próximo paso
+Reinstalar y validar splash (fondo oscuro + mancuerna naranja centrada, sin recuadro).

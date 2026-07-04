@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/body_progress.dart';
+import '../../core/theme/app_theme.dart';
 import '../../services/body_progress_service.dart';
 import '../../widgets/state_views.dart';
 
@@ -74,14 +75,14 @@ class _BodyProgressPageState extends State<BodyProgressPage> {
             title: 'Peso (kg)',
             labels: data.chart.labels,
             values: data.chart.weight,
-            color: Colors.blue,
+            color: AppTheme.accent,
           ),
           const SizedBox(height: 16),
           _MetricChart(
             title: '% Grasa',
             labels: data.chart.labels,
             values: data.chart.bodyFat,
-            color: Colors.orange,
+            color: const Color(0xFF4FC3F7),
           ),
           const SizedBox(height: 16),
           ...data.items.reversed.map(
@@ -134,6 +135,14 @@ class _MetricChart extends StatelessWidget {
 
     if (spots.isEmpty) return const SizedBox.shrink();
 
+    final colorScheme = Theme.of(context).colorScheme;
+    // Estilo de ejes adaptado al tema (legible en claro y oscuro).
+    final axisLabelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontSize: 10,
+    );
+    final gridColor = colorScheme.outlineVariant.withValues(alpha: 0.5);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -146,7 +155,13 @@ class _MetricChart extends StatelessWidget {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    getDrawingHorizontalLine: (value) =>
+                        FlLine(color: gridColor, strokeWidth: 1),
+                    getDrawingVerticalLine: (value) =>
+                        FlLine(color: gridColor, strokeWidth: 1),
+                  ),
                   titlesData: FlTitlesData(
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
@@ -159,28 +174,48 @@ class _MetricChart extends StatelessWidget {
                           }
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              labels[index],
-                              style: const TextStyle(fontSize: 10),
-                            ),
+                            child: Text(labels[index], style: axisLabelStyle),
                           );
                         },
                       ),
                     ),
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) => Text(
+                          meta.formattedValue,
+                          style: axisLabelStyle,
+                        ),
+                      ),
                     ),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  borderData: FlBorderData(show: true),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(color: gridColor),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
                       color: color,
                       barWidth: 3,
-                      dotData: const FlDotData(show: true),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, bar, index) =>
+                            FlDotCirclePainter(
+                              radius: 3,
+                              color: color,
+                              strokeWidth: 0,
+                            ),
+                      ),
+                      // Relleno sutil bajo la curva para dar profundidad.
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: color.withValues(alpha: 0.12),
+                      ),
                     ),
                   ],
                 ),
