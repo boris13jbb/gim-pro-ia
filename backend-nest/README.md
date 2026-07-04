@@ -67,14 +67,17 @@ npm run db:generate
 | Fase | Módulo | Estado |
 |------|--------|--------|
 | 01 | Backend base, health, Swagger | ✅ Completada |
-| 02 | Auth JWT, users CRUD | ✅ Completada |
+| 02 | Auth JWT, users CRUD | ✅ Aprobada |
 | 03 | Members, plans, memberships | ✅ Completada |
 | 04 | Asistencias/QR | ✅ Completada |
 | 05 | Progreso físico y rutinas | ✅ Completada |
-| 06 | Inventario y productos | ✅ Completada (pendiente aprobación) |
-| 07 | POS, ventas y caja | ✅ Completada (pendiente aprobación) |
+| 06 | Inventario y productos | ✅ Completada |
+| 07 | POS, ventas y caja | ✅ Completada |
 | 08 | Reportes y exportaciones | ✅ Aprobada |
-| 09 | Facturación SRI | 🔄 En curso |
+| 09 | Facturación SRI | ✅ Aprobada |
+| 10 | Flutter app socio (slices 1–3) | ✅ Aprobada |
+| 11 | IA Gemini + WebSockets (chat streaming + notificaciones) | 🔄 Implementada — pendiente prueba manual y aprobación |
+| 12 | Cierre de migración | 🔄 En curso |
 
 ### Auditorías
 
@@ -87,7 +90,17 @@ npm run audit:phase-06   # inventario/productos
 npm run audit:phase-07   # POS/ventas/caja
 npm run audit:phase-08   # reportes/exportaciones
 npm run audit:phase-09   # SRI consulta (slice 1)
+npm run audit:phase-11   # IA asistente (REST)
 ```
+
+## WebSockets (Fase 11)
+
+Dos namespaces socket.io autenticados por JWT en el handshake (mismo `JWT_ACCESS_SECRET`), aislados por sala `member:{id}`:
+
+- `/ai` — chat del asistente IA en streaming (con respaldo REST `POST /api/ai/chat`).
+- `/events` — notificaciones en tiempo real al socio (asistencia/membresía).
+
+Detalle de eventos en `docs/07-endpoints-api.md`.
 
 ## Compile and run the project
 

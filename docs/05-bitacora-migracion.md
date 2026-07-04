@@ -1615,3 +1615,172 @@ Revertir `assets/branding/*` y los recursos generados con `git checkout -- .`.
 
 ### Próximo paso
 Reinstalar y validar splash (fondo oscuro + mancuerna naranja centrada, sin recuadro).
+
+---
+
+## 2026-07-04 — Fase 11 (Slice 2): WebSockets — streaming del chat IA
+
+### Cambio realizado
+Se agregó un gateway WebSocket (`namespace /ai`, socket.io) autenticado por JWT en el handshake para entregar la respuesta del asistente IA **en streaming** (token a token). El chat de Flutter ahora muestra la respuesta a medida que se genera, con **respaldo automático a REST** si el socket no conecta. La API key de Gemini sigue solo en el servidor.
+
+### Archivos creados
+- `backend-nest/src/websocket/websocket.module.ts`
+- `backend-nest/src/websocket/ai-chat.gateway.ts`
+- `backend-nest/src/websocket/ws-auth.service.ts`
+- `frontend-flutter/lib/services/ai_socket_service.dart`
+
+### Archivos modificados
+- `backend-nest/src/ai-assistant/gemini.service.ts` (`generateReplyStream` + `createChatSession` reutilizable)
+- `backend-nest/src/ai-assistant/ai-chat.service.ts` (`streamMessage` + `prepareTurn`/`persistAssistantReply` sin duplicar lógica)
+- `backend-nest/src/app.module.ts` (registra `WebsocketModule`)
+- `frontend-flutter/lib/features/ai/ai_chat_page.dart` (streaming + fallback REST, burbuja mutable)
+- `frontend-flutter/lib/core/config/api_config.dart` (`socketBaseUrl`)
+- `frontend-flutter/lib/app.dart` (provider `AiSocketService`)
+- `backend-nest/package.json`, `frontend-flutter/pubspec.yaml` (dependencias)
+- `docs/07-endpoints-api.md`, `docs/fases/fase-11-ia-websockets-gemini.md`, `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Chat del asistente IA (solo socio). REST se mantiene intacto como respaldo.
+
+### Código reutilizado
+`AiChatService` (límite diario, validación de propiedad, persistencia), `MembersService` (validación de socio), `AuthStorage` (token del socket), `SendAiChatDto` (misma forma de payload validada manualmente en el gateway).
+
+### Duplicados revisados
+La lógica de turno se factorizó (`prepareTurn`/`persistAssistantReply`) para que REST y WS compartan las mismas reglas; la creación de sesión Gemini se unificó en `createChatSession`.
+
+### Optimizaciones realizadas
+Streaming reduce la latencia percibida; conexión del socket en segundo plano al abrir el chat; timeout de turno para evitar estados colgados.
+
+### Comentarios agregados en el código
+Seguridad del handshake JWT, aislamiento por sala `member:{id}`, flujo Flutter→NestJS→Gemini, y motivo del respaldo REST.
+
+### Pruebas realizadas
+- Backend: `npm run build` → OK; lint de archivos WS → sin errores
+- Flutter: `flutter analyze` (archivos modificados) → **No issues found**
+- Pendiente: prueba manual en dispositivo con `GEMINI_API_KEY` (ver respuesta token a token) y prueba de rechazo con token inválido
+
+### Resultado
+Pendiente de aprobación — streaming implementado, listo para probar.
+
+### Riesgos detectados
+- Medio-bajo. Requiere backend con `@nestjs/platform-socket.io` activo y `GEMINI_API_KEY`. Si el socket no conecta, la app usa REST (sin degradar la funcionalidad).
+
+### Rollback
+1. Quitar `WebsocketModule` de `app.module.ts` y borrar `src/websocket/`.
+2. En Flutter, revertir `ai_chat_page.dart`, quitar `ai_socket_service.dart` y su provider en `app.dart`.
+3. El chat sigue funcionando por REST (`POST /api/ai/chat`).
+
+### Próximo paso
+Prueba manual del streaming; luego decidir Slice B (notificaciones en tiempo real) o cierre de fase.
+
+---
+
+## 2026-07-04 — Fase 11 (Slice 3): WebSockets — notificaciones en tiempo real al socio
+
+### Cambio realizado
+Se agregó un segundo gateway WebSocket (`namespace /events`, socket.io) autenticado por JWT en el handshake, que envía **notificaciones en tiempo real** al socio en su sala `member:{id}`. Hoy se emiten dos eventos de dominio reales: **asistencia registrada** (al hacer check-in) y **cambios de membresía** (activación y cancelación). La app Flutter muestra un aviso puntual (SnackBar) y una **campana con contador de no leídas** en el AppBar, con panel del historial reciente.
+
+### Archivos creados
+- `backend-nest/src/websocket/realtime.gateway.ts` (gateway `/events`)
+- `backend-nest/src/websocket/realtime.service.ts` (API `notifyMember`, desacopla dominio de socket.io)
+- `backend-nest/src/websocket/realtime.module.ts`
+- `backend-nest/src/websocket/ws-auth.module.ts` (auth WS reutilizable)
+- `backend-nest/src/websocket/ws-token.util.ts` (extracción de token + helpers tipados de `socket.data`)
+- `backend-nest/src/websocket/types/realtime-notification.type.ts`
+- `frontend-flutter/lib/core/models/app_notification.dart`
+- `frontend-flutter/lib/services/realtime_notifications_service.dart`
+
+### Archivos modificados
+- `backend-nest/src/websocket/websocket.module.ts` (reutiliza `WsAuthModule`, ya no declara `WsAuthService`/`JwtModule`/`MembersModule`)
+- `backend-nest/src/websocket/ai-chat.gateway.ts` (usa `extractHandshakeToken` + helpers tipados; se eliminó su `extractToken` privado duplicado)
+- `backend-nest/src/attendance/attendance.module.ts` y `attendance.service.ts` (notifica al registrar asistencia)
+- `backend-nest/src/memberships/memberships.module.ts` y `memberships.service.ts` (notifica al crear y cancelar)
+- `backend-nest/src/app.module.ts` (registra `RealtimeModule`)
+- `frontend-flutter/lib/app.dart` (provider `RealtimeNotificationsService`)
+- `frontend-flutter/lib/features/shell/app_shell.dart` (ahora Stateful: conexión, SnackBar, campana con badge y panel)
+- `docs/07-endpoints-api.md`, `docs/fases/fase-11-ia-websockets-gemini.md`, `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Área de socio (nueva capa de notificaciones). No cambia ninguna regla de negocio existente: la asistencia y la membresía se persisten igual; la notificación se emite **después** de guardar y nunca interrumpe el flujo.
+
+### Código reutilizado
+`WsAuthService` (mismo handshake JWT del chat IA, ahora en `WsAuthModule`), salas `member:{id}`, `AuthStorage` (token del socket en Flutter), patrón de `AiSocketService` para el cliente socket.io, `ApiConfig.socketBaseUrl`.
+
+### Duplicados revisados
+Se extrajo la extracción de token y el acceso a `socket.data` a `ws-token.util.ts` (compartido por ambos gateways); se eliminó el método duplicado en `ai-chat.gateway.ts`. `WsAuthService` quedó en un módulo reutilizable en lugar de duplicarse.
+
+### Optimizaciones realizadas
+`RealtimeService` desacopla los servicios de dominio del gateway (no conocen socket.io) y captura errores para no romper el negocio. Lista de notificaciones acotada a 30 en el cliente. `RealtimeModule` no importa módulos de dominio → sin dependencias circulares.
+
+### Comentarios agregados en el código
+Seguridad del handshake y aislamiento por sala, motivo de emitir después de persistir, semántica del namespace `/events` en `@WebSocketServer()` (Namespace, verificado con la doc oficial de NestJS).
+
+### Pruebas realizadas
+- Backend: `npm run build` → OK; `npm run lint` → **0 errores**
+- Flutter: `flutter analyze` (archivos nuevos/modificados) → **No issues found** (los 14 avisos restantes son preexistentes en otros archivos)
+- Pendiente: prueba manual en dispositivo (registrar asistencia del socio conectado y verificar el aviso; crear/cancelar membresía y verificar aviso)
+
+### Resultado
+Pendiente de aprobación — notificaciones en tiempo real implementadas, listas para probar.
+
+### Riesgos detectados
+- Bajo. Si el socket no conecta, la app funciona igual (sin avisos en vivo). Al cerrar sesión, el shell cierra el socket. Reutiliza `CORS_ORIGINS` y `JWT_ACCESS_SECRET`; sin nuevas variables de entorno ni cambios de BD.
+
+### Rollback
+1. Quitar `RealtimeModule` de `app.module.ts` y borrar `realtime.*.ts`, `types/realtime-notification.type.ts`.
+2. Quitar `imports: [RealtimeModule]` y las llamadas `this.realtime.notifyMember(...)` en `attendance`/`memberships`.
+3. En Flutter, revertir `app_shell.dart`, quitar el provider en `app.dart`, `realtime_notifications_service.dart` y `app_notification.dart`.
+4. El chat IA (`/ai`) y el resto de la app siguen intactos.
+
+### Próximo paso
+Prueba manual de las notificaciones; con la aprobación, cerrar Fase 11 y preparar Fase 12 (cierre de migración).
+
+---
+
+## 2026-07-04 — Fase 12: Cierre de migración (consolidación documental)
+
+### Cambio realizado
+Cierre de la migración: consolidación documental y verificación técnica del sistema completo (NestJS + Flutter + IA/WebSockets). **No se modificó código** ni la base de datos; no se eliminó el legacy PHP. Se completó el documento de cierre, se actualizó el manual del sistema migrado, los README y el plan/riesgos.
+
+### Archivos creados
+- Ninguno (solo se completaron documentos existentes)
+
+### Archivos modificados
+- `docs/fases/fase-12-cierre-migracion.md` (documento de cierre completo)
+- `docs/12-manual-funcionalidades.md` (ahora describe el sistema migrado)
+- `docs/04-plan-migracion-fases.md` (estado global + marcas de fases)
+- `docs/11-riesgos-y-rollback.md` (rollback consolidado 07–11 + riesgos tiempo real + cierre)
+- `README.md`, `backend-nest/README.md`, `frontend-flutter/README.md` (estado final)
+- `docs/06-checklist-pruebas.md` (verificación de cierre)
+
+### Funcionalidad afectada
+Ninguna en runtime. Solo documentación y verificación.
+
+### Código reutilizado
+No aplica (fase documental).
+
+### Duplicados revisados
+Se actualizaron los documentos oficiales existentes; no se crearon archivos nuevos ni duplicados.
+
+### Optimizaciones realizadas
+Documentación unificada y coherente con el código real; `.env.example` verificado (completo, sin secretos, sin variables nuevas).
+
+### Comentarios agregados en el código
+No aplica.
+
+### Pruebas realizadas
+- Backend: `npm run build` → OK; `npm run lint` → 0 errores
+- Backend: `start:dev` levanta correctamente (grafo de módulos válido)
+- Flutter: `flutter analyze` → sin issues nuevos; `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — cierre documental y verificación completados.
+
+### Riesgos detectados
+- Bajo. Pendientes post-cierre documentados (prueba manual Fase 11, UI de staff, endurecimiento de producción, retiro de PHP tras operación en paralelo).
+
+### Rollback
+No aplica (sin cambios de código/BD). El rollback por fase sigue vigente en `docs/11-riesgos-y-rollback.md`.
+
+### Próximo paso
+Aprobación final del usuario. Post-cierre: prueba manual de IA/WebSockets con `GEMINI_API_KEY`, planificar UI de staff en Flutter y endurecimiento para producción.

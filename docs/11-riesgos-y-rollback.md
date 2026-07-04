@@ -68,3 +68,29 @@ DROP TABLE IF EXISTS movimientos_inventario;
 ```
 
 Revertir código: eliminar módulos `inventory/`, `cash-registers/`, `sales/` y relaciones en `schema.prisma`, luego `npm run db:generate`.
+
+## Rollback Fases 07–11 (consolidado)
+
+Cada fase es reversible sin afectar al legacy PHP. Detalle en cada `docs/fases/fase-XX-*.md`.
+
+| Fase | Rollback resumido |
+|:----:|-------------------|
+| 07 POS/caja | Eliminar módulos `sales/`, `cash-registers/`; las ventas quedan sin registrar por NestJS (PHP intacto). |
+| 08 Reportes | Solo lectura/exportación; eliminar módulo `reports/` sin impacto en datos. |
+| 09 SRI | Usar solo ambiente de pruebas; no autorizar en producción hasta validar; eliminar `billing-sri/` revierte la emisión. |
+| 10 Flutter | La app solo consume API; desinstalar/omitir el build no afecta backend ni BD. |
+| 11 IA/WebSockets | Quitar `AiAssistantModule`, `WebsocketModule` y `RealtimeModule` de `app.module.ts`; opcional `DROP TABLE ai_messages, ai_conversations;` (con respaldo). El resto de la API sigue operando. |
+
+## Riesgos tiempo real (Fase 11)
+
+| ID | Riesgo | Mitigación | Estado |
+|----|--------|------------|--------|
+| R12 | Socket expone datos de otro socio | Sala `member:{id}` + JWT en handshake; `memberId` desde token firmado | ✅ Mitigado |
+| R13 | Fallo de notificación rompe negocio | `RealtimeService` emite tras persistir y captura errores (no propaga) | ✅ Mitigado |
+| R14 | API key Gemini filtrada | Solo en servidor; nunca en Flutter; validación de entorno | ✅ Mitigado |
+
+## Cierre (Fase 12)
+
+- No se elimina PHP legacy hasta período de operación en paralelo validado.
+- Antes de producción: secretos JWT únicos, `NODE_ENV=production` (bloquea secretos inseguros), HTTPS, backups programados y `SWAGGER_ENABLED=false` si aplica.
+- Rollback global: mantener PHP operativo y desactivar la API NestJS; la BD `ec_gym_system` no sufre cambios destructivos por la migración.

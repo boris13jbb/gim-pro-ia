@@ -357,3 +357,45 @@ npm run audit:phase-11
 | 10 | Login | Ver logo de marca | — | mancuerna naranja centrada | Pendiente manual | Pendiente |
 | 10 | Launcher | Icono en el dispositivo tras reinstalar | — | icono naranja/oscuro | Pendiente manual | Pendiente |
 | 10 | Arranque | Splash al abrir la app | — | fondo oscuro + logo naranja | Pendiente manual | Pendiente |
+
+## Fase 11 (Slice 2) — WebSockets: streaming del chat IA
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint/Evento | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|-----------------|-------------------|-------------------|--------|
+| 11 | Backend | `npm run build` | — | compila sin errores | Build OK | OK |
+| 11 | Backend | Lint archivos WS | — | sin errores | Sin errores | OK |
+| 11 | Flutter | `flutter analyze` (chat/socket) | — | sin issues | No issues found | OK |
+| 11 | Asistente | Enviar mensaje (socket) | `ai.message` | respuesta token a token | Requiere `GEMINI_API_KEY` | Pendiente manual |
+| 11 | Asistente | Recibir fragmentos | `ai.response.chunk` | texto que crece en vivo | Pendiente manual | Pendiente |
+| 11 | Asistente | Fin de respuesta | `ai.response.done` | conversación persistida | Pendiente manual | Pendiente |
+| 11 | Seguridad | Conectar sin token / token inválido | handshake `/ai` | `ai.error` + desconexión | Pendiente manual | Pendiente |
+| 11 | Seguridad | Socio no ve chats de otro | sala `member:{id}` | aislado por socio | Por diseño | OK (por diseño) |
+| 11 | Resiliencia | Backend sin socket disponible | — | cae a REST `POST /ai/chat` | Fallback implementado | OK (por diseño) |
+
+## Fase 11 (Slice 3) — WebSockets: notificaciones en tiempo real
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint/Evento | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|-----------------|-------------------|-------------------|--------|
+| 11 | Backend | `npm run build` | — | compila sin errores | Build OK | OK |
+| 11 | Backend | `npm run lint` | — | 0 errores | 0 errores | OK |
+| 11 | Flutter | `flutter analyze` (nuevos/modificados) | — | sin issues | No issues found | OK |
+| 11 | Notificaciones | Registrar asistencia del socio conectado | `notification` `attendance.registered` | SnackBar + badge en la app | — | Pendiente manual |
+| 11 | Notificaciones | Crear membresía del socio | `notification` `membership.updated` | aviso "Membresía activada" | — | Pendiente manual |
+| 11 | Notificaciones | Cancelar membresía del socio | `notification` `membership.updated` | aviso "Membresía cancelada" | — | Pendiente manual |
+| 11 | Notificaciones | Abrir campana / marcar leídas | panel historial | badge vuelve a 0 | — | Pendiente manual |
+| 11 | Seguridad | Conectar `/events` sin token / inválido | handshake `/events` | `notification.error` + desconexión | — | Pendiente manual |
+| 11 | Seguridad | Socio no recibe avisos de otro | sala `member:{id}` | aislado por socio | Por diseño | OK (por diseño) |
+| 11 | Resiliencia | Notificar con socio desconectado | `RealtimeService` | no rompe la asistencia/membresía | Por diseño | OK (por diseño) |
+
+## Fase 12 — Cierre de migración (verificación)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 12 | Backend | `npm run build` | — | compila sin errores | Build OK | OK |
+| 12 | Backend | `npm run lint` | — | 0 errores | 0 errores | OK |
+| 12 | Backend | `npm run start:dev` (arranque) | — | Nest inicia (grafo de módulos válido) | App levanta | OK |
+| 12 | Flutter | `flutter analyze` | — | sin issues nuevos | 14 avisos preexistentes, 0 nuevos | OK |
+| 12 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 12 | Config | `.env.example` completo, sin secretos | — | todas las variables presentes | Verificado | OK |
+| 12 | Docs | Cierre, manual, README, plan, riesgos | — | coherentes con el código | Actualizados | OK |
+| 12 | IA/WebSockets | Prueba manual con `GEMINI_API_KEY` real | `/ai`, `/events` | streaming + notificaciones | — | Pendiente manual |

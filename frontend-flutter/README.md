@@ -43,15 +43,18 @@ flutter run -d windows
 # o: flutter run   (Android/iOS)
 ```
 
-## Funcionalidades (Fase 10 — slice 1)
+## Funcionalidades (Fases 10–11)
 
 - Login socio (`POST /auth/member/login`)
 - Perfil (`GET /auth/me`)
 - Membresía (`GET /members/me/membership`)
 - Carnet QR (`GET /qr-access/me/card`)
-- Progreso físico (`GET /body-progress/me`)
+- Progreso físico con gráficos (`GET /body-progress/me`)
 - Rutina actual (`GET /workout-routines/me/current`)
 - Registrar asistencia (`POST /attendance/self`)
+- Asistente IA: chat REST + **streaming por WebSocket** (`/ai`)
+- **Notificaciones en tiempo real** (`/events`): asistencia y membresía, con campana e historial
+- Tema claro/oscuro/sistema (persistente)
 - Refresh token automático en 401
 - Tokens en `flutter_secure_storage`
 
