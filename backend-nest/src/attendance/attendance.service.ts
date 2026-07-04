@@ -7,6 +7,7 @@ import {
 import { Prisma, socios_estado } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { MembersService } from '../members/members.service';
+import { RealtimeService } from '../websocket/realtime.service';
 import { buildMemberPhotoUrl } from '../config/upload.config';
 import { RegisterAttendanceDto } from './dto/register-attendance.dto';
 import { ListAttendanceReportQueryDto } from './dto/list-attendance-report-query.dto';
@@ -24,6 +25,7 @@ export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membersService: MembersService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   /**
@@ -73,6 +75,19 @@ export class AttendanceService {
       },
       include: {
         socios: { select: { id: true, nombre: true, dni: true, foto: true } },
+      },
+    });
+
+    // Notifica al socio en tiempo real que su ingreso quedó registrado.
+    // Se emite después de persistir; si el socio no está conectado, se ignora.
+    this.realtime.notifyMember(member.id, {
+      type: 'attendance.registered',
+      title: 'Asistencia registrada',
+      body: 'Tu ingreso al gimnasio quedó registrado. ¡Buen entrenamiento!',
+      data: {
+        attendanceId: record.id,
+        method: record.metodo_ingreso,
+        checkedInAt: record.fecha_hora,
       },
     });
 

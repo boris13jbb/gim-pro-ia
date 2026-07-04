@@ -1,6 +1,6 @@
 ﻿# IA, Gemini y WebSockets
 
-**Estado:** Slice 1 implementado (REST + chat Flutter) — pendiente aprobación para cerrar slice 1 / avanzar a WebSockets
+**Estado:** Slice 1 (REST + chat Flutter), Slice 2 (WebSockets: streaming del chat IA) y Slice 3 (WebSockets: notificaciones en tiempo real al socio) implementados — pendiente prueba manual con `GEMINI_API_KEY` y aprobación
 
 ## Objetivo de la fase
 
@@ -104,11 +104,97 @@ AI_THROTTLE_TTL_MS=60000
 
 Correcciones anteriores; build y auditoría OK.
 
-## Pendientes (slice 2+)
+## Slice 2 — WebSockets (streaming del chat IA)
 
-- WebSocket gateway (`ai.message`, `ai.response.chunk`)
+**Namespace:** `/ai` (socket.io). Autenticación por JWT en el handshake (`auth.token`), reutilizando `JWT_ACCESS_SECRET`. Solo socios activos; cada socket entra a la sala `member:{memberId}` (aislamiento por socio).
+
+**Eventos:**
+
+| Dirección | Evento | Payload |
+|-----------|--------|---------|
+| Cliente → Servidor | `ai.message` | `{ message: string, conversationId?: number }` |
+| Servidor → Cliente | `ai.response.chunk` | `{ delta: string }` |
+| Servidor → Cliente | `ai.response.done` | `{ conversationId: number, message: {...} }` |
+| Servidor → Cliente | `ai.error` | `{ message: string }` |
+
+**Backend (nuevos/modificados):**
+
+| Archivo | Descripción |
+|---------|-------------|
+| `websocket/websocket.module.ts` | Módulo WS (reutiliza `AiChatService` y `MembersService`) |
+| `websocket/ai-chat.gateway.ts` | Gateway `/ai`: auth handshake, salas, streaming |
+| `websocket/ws-auth.service.ts` | Verifica JWT del socket y valida socio activo |
+| `ai-assistant/gemini.service.ts` | `generateReplyStream()` (usa `sendMessageStream`) |
+| `ai-assistant/ai-chat.service.ts` | `streamMessage()` reutilizando la lógica REST (límite diario, propiedad, persistencia) |
+
+**Flutter (nuevos/modificados):**
+
+| Archivo | Descripción |
+|---------|-------------|
+| `services/ai_socket_service.dart` | Cliente socket.io del asistente (streaming) |
+| `features/ai/ai_chat_page.dart` | Respuesta token a token; respaldo REST si el socket no conecta |
+| `core/config/api_config.dart` | `socketBaseUrl` (API sin `/api`) |
+| `app.dart` | Provider de `AiSocketService` |
+
+**Dependencias:** backend `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`; Flutter `socket_io_client`.
+
+**Sin cambios de BD.** Reutiliza `ai_conversations`/`ai_messages`.
+
+## Slice 3 — WebSockets (notificaciones en tiempo real al socio)
+
+**Namespace:** `/events` (socket.io). Mismo handshake JWT que `/ai` (reutiliza `WsAuthService`, ahora en `WsAuthModule`). Cada socket entra a la sala `member:{memberId}`; las notificaciones se emiten solo a esa sala (aislamiento por socio).
+
+**Evento del servidor al cliente:** `notification`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `type` | string | `attendance.registered` \| `membership.updated` |
+| `title` | string | Título corto del aviso |
+| `body` | string | Detalle del aviso |
+| `data` | objeto | Datos del evento (ids, fechas, estado) |
+| `createdAt` | string ISO | Momento de emisión (lo agrega el servidor) |
+
+Evento de error de handshake: `notification.error` `{ message }` (antes de desconectar).
+
+**Origen de los eventos (acciones de dominio reales):**
+
+| Acción backend | Evento emitido |
+|----------------|----------------|
+| `AttendanceService.register()` (check-in) | `attendance.registered` |
+| `MembershipsService.create()` | `membership.updated` (activada) |
+| `MembershipsService.cancel()` | `membership.updated` (cancelada) |
+
+**Backend (nuevos/modificados):**
+
+| Archivo | Descripción |
+|---------|-------------|
+| `websocket/realtime.gateway.ts` | Gateway `/events`: auth handshake, salas, `emitToMember` |
+| `websocket/realtime.service.ts` | `notifyMember()` — API que usan los servicios de dominio |
+| `websocket/realtime.module.ts` | Módulo (exporta `RealtimeService`; sin ciclos) |
+| `websocket/ws-auth.module.ts` | `WsAuthService` reutilizable por ambos gateways |
+| `websocket/ws-token.util.ts` | Extracción de token + helpers tipados de `socket.data` |
+| `websocket/types/realtime-notification.type.ts` | Tipo `RealtimeNotification` |
+| `attendance/*`, `memberships/*` | Emiten notificaciones tras persistir |
+| `app.module.ts` | Registra `RealtimeModule` |
+
+**Flutter (nuevos/modificados):**
+
+| Archivo | Descripción |
+|---------|-------------|
+| `core/models/app_notification.dart` | Modelo de la notificación recibida |
+| `services/realtime_notifications_service.dart` | Cliente socket.io `/events` (ChangeNotifier: lista + no leídas) |
+| `features/shell/app_shell.dart` | SnackBar por evento + campana con badge + panel de historial |
+| `app.dart` | Provider `RealtimeNotificationsService` |
+
+**Regla:** notificar nunca rompe el flujo de negocio; se emite después de guardar y los errores se ignoran (registrados en log).
+
+**Sin cambios de BD ni nuevas variables de entorno.** Reutiliza `CORS_ORIGINS` y `JWT_ACCESS_SECRET`.
+
+## Pendientes (futuro)
+
 - `saveAiNote` como herramienta explícita
-- Streaming en Flutter
+- Persistir notificaciones (tabla `notifications`) para historial entre sesiones
+- Alertas proactivas de membresía por vencer (job programado)
 - Voz (futuro)
 
 ## Cómo hacer rollback

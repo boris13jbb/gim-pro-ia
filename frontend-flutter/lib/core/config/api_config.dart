@@ -22,4 +22,11 @@ class ApiConfig {
     }
     return 'http://localhost:3000/api';
   }
+
+  /// Base para conexiones WebSocket (socket.io). Es la misma URL de la API sin
+  /// el sufijo `/api`, ya que los gateways cuelgan del host raíz (namespaces).
+  static String get socketBaseUrl {
+    final url = baseUrl;
+    return url.endsWith('/api') ? url.substring(0, url.length - 4) : url;
+  }
 }

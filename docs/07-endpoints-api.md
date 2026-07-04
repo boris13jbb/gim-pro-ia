@@ -1172,4 +1172,78 @@ Envía un mensaje al asistente IA. Crea conversación si no se envía `conversat
 
 ---
 
+## WebSocket — Asistente IA (streaming)
+
+Transporte: **socket.io**. Base: la misma URL de la API **sin** `/api` (los namespaces cuelgan del host raíz). Namespace: **`/ai`**.
+
+### Autenticación
+JWT **access token** en el handshake (`auth.token`), verificado con `JWT_ACCESS_SECRET` (mismo secreto que la API REST). Solo **socios activos**; el `memberId` se toma del token, nunca del cliente. Token ausente/inválido/vencido o socio inactivo → se emite `ai.error` y se desconecta el socket.
+
+Aislamiento: cada socket entra a la sala `member:{memberId}`; no recibe datos de otros socios.
+
+### Eventos
+
+| Dirección | Evento | Payload |
+|-----------|--------|---------|
+| Cliente → Servidor | `ai.message` | `{ "message": string (1..4000), "conversationId"?: number }` |
+| Servidor → Cliente | `ai.response.chunk` | `{ "delta": string }` (fragmento de texto) |
+| Servidor → Cliente | `ai.response.done` | `{ "conversationId": number, "message": { id, role, content, metadata, createdAt } }` |
+| Servidor → Cliente | `ai.error` | `{ "message": string }` |
+
+### Reglas de negocio (compartidas con REST)
+- Mismo **límite diario** (`AI_DAILY_MESSAGE_LIMIT`) y validación de **propiedad** de la conversación.
+- La respuesta completa se persiste igual que en REST (`ai_messages`).
+- Si Gemini falla, se elimina el mensaje del socio para no romper el historial y se emite `ai.error`.
+
+### Ejemplo (cliente)
+```txt
+connect  →  /ai   (auth: { token: <access_token> })
+emit     →  ai.message { "message": "¿Cuántas veces fui este mes?" }
+on       ←  ai.response.chunk { "delta": "Según " }
+on       ←  ai.response.chunk { "delta": "tus registros..." }
+on       ←  ai.response.done  { "conversationId": 1, "message": { ... } }
+```
+
+Respaldo: si el socket no conecta, Flutter usa `POST /api/ai/chat` (REST) automáticamente.
+
+---
+
+## WebSocket — Notificaciones en tiempo real (socio)
+
+Transporte: **socket.io**. Base: la misma URL de la API **sin** `/api`. Namespace: **`/events`**.
+
+### Autenticación
+Idéntica al namespace `/ai`: JWT **access token** en el handshake (`auth.token`), verificado con `JWT_ACCESS_SECRET`. Solo **socios activos**; el `memberId` proviene del token. Token ausente/inválido/vencido o socio inactivo → se emite `notification.error` y se desconecta el socket.
+
+Aislamiento: cada socket entra a la sala `member:{memberId}`; solo recibe sus propias notificaciones.
+
+### Eventos
+
+| Dirección | Evento | Payload |
+|-----------|--------|---------|
+| Servidor → Cliente | `notification` | `{ "type": string, "title": string, "body": string, "data"?: object, "createdAt": string ISO }` |
+| Servidor → Cliente | `notification.error` | `{ "message": string }` (fallo de handshake, antes de desconectar) |
+
+`type` actuales: `attendance.registered` (check-in del socio) y `membership.updated` (membresía activada o cancelada).
+
+### Origen (acciones de dominio reales)
+
+| Acción backend | `type` emitido |
+|----------------|----------------|
+| Registrar asistencia (`POST /api/attendance` / escaneo QR/DNI) | `attendance.registered` |
+| Crear membresía (`POST /api/memberships`) | `membership.updated` |
+| Cancelar membresía (`PATCH /api/memberships/:id/cancel`) | `membership.updated` |
+
+La notificación se emite **después** de persistir la acción y nunca interrumpe el flujo de negocio.
+
+### Ejemplo (cliente)
+```txt
+connect  →  /events   (auth: { token: <access_token> })
+on       ←  notification { "type": "attendance.registered", "title": "Asistencia registrada", "body": "Tu ingreso...", "createdAt": "..." }
+```
+
+Sin variables de entorno ni tablas nuevas: reutiliza `CORS_ORIGINS` y `JWT_ACCESS_SECRET`.
+
+---
+
 *Swagger interactivo: `GET /api/docs`*

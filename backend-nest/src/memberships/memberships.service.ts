@@ -9,6 +9,7 @@ import {
   suscripciones_estado,
 } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
+import { RealtimeService } from '../websocket/realtime.service';
 import { CreateMembershipDto } from './dto/create-membership.dto';
 import {
   addDays,
@@ -18,7 +19,10 @@ import { parseLocalDateString, startOfDay } from '../common/utils/date.util';
 
 @Injectable()
 export class MembershipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeService,
+  ) {}
 
   async findAll() {
     const items = await this.prisma.suscripciones.findMany({
@@ -98,6 +102,19 @@ export class MembershipsService {
       },
     });
 
+    // Avisa al socio en tiempo real que tiene una membresía activa nueva.
+    this.realtime.notifyMember(dto.memberId, {
+      type: 'membership.updated',
+      title: 'Membresía activada',
+      body: `Tu membresía del plan "${plan.nombre}" ya está activa.`,
+      data: {
+        membershipId: created.id,
+        status: created.estado,
+        startDate: created.fecha_inicio,
+        endDate: created.fecha_fin,
+      },
+    });
+
     return this.mapDetail(created);
   }
 
@@ -119,6 +136,16 @@ export class MembershipsService {
         planes: { select: { id: true, nombre: true, precio: true } },
       },
     });
+
+    // Avisa al socio en tiempo real que su membresía dejó de estar vigente.
+    if (updated.socio_id) {
+      this.realtime.notifyMember(updated.socio_id, {
+        type: 'membership.updated',
+        title: 'Membresía cancelada',
+        body: 'Tu membresía fue cancelada. Acércate a recepción si necesitas ayuda.',
+        data: { membershipId: updated.id, status: updated.estado },
+      });
+    }
 
     return this.mapDetail(updated);
   }

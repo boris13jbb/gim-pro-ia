@@ -40,7 +40,8 @@ export class AiToolsService {
   }
 
   async getBodyProgress(memberId: number) {
-    const data = await this.bodyProgressService.listMemberMeasurements(memberId);
+    const data =
+      await this.bodyProgressService.listMemberMeasurements(memberId);
     const items = data.items ?? [];
     const latest = items.length > 0 ? items[items.length - 1] : null;
     return {

@@ -75,6 +75,70 @@ export class AiChatService {
   }
 
   async sendMessage(memberId: number, dto: SendAiChatDto) {
+    const turn = await this.prepareTurn(memberId, dto);
+
+    try {
+      const reply = await this.gemini.generateReply(turn.geminiInput);
+      const assistantMessage = await this.persistAssistantReply(
+        turn.conversation.id,
+        reply,
+      );
+
+      return {
+        conversationId: turn.conversation.id,
+        reply: assistantMessage.content,
+        message: this.mapMessage(assistantMessage),
+      };
+    } catch (error) {
+      // Si Gemini falla, no dejar mensajes user huérfanos que rompen el historial.
+      await this.prisma.ai_messages.delete({
+        where: { id: turn.userMessage.id },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Variante en streaming para WebSockets: entrega la respuesta por fragmentos
+   * (onChunk) y persiste el mensaje final. Reutiliza exactamente la misma
+   * preparación, límites diarios, validación de propiedad y persistencia que el
+   * flujo REST, de modo que las reglas de negocio no se dupliquen ni difieran.
+   */
+  async streamMessage(
+    memberId: number,
+    dto: SendAiChatDto,
+    onChunk: (delta: string) => void,
+  ) {
+    const turn = await this.prepareTurn(memberId, dto);
+
+    try {
+      const reply = await this.gemini.generateReplyStream(
+        turn.geminiInput,
+        onChunk,
+      );
+      const assistantMessage = await this.persistAssistantReply(
+        turn.conversation.id,
+        reply,
+      );
+
+      return {
+        conversationId: turn.conversation.id,
+        message: this.mapMessage(assistantMessage),
+      };
+    } catch (error) {
+      await this.prisma.ai_messages.delete({
+        where: { id: turn.userMessage.id },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Prepara un turno de conversación: valida límite diario, resuelve/crea la
+   * conversación (solo del socio), guarda el mensaje del usuario y arma el
+   * contexto real + historial para Gemini.
+   */
+  private async prepareTurn(memberId: number, dto: SendAiChatDto) {
     await this.ensureDailyLimit(memberId);
 
     const conversation = dto.conversationId
@@ -100,58 +164,57 @@ export class AiChatService {
       },
     });
 
-    try {
-      const memberContext = await this.aiTools.buildMemberContext(memberId);
-      const { history, message } = this.buildGeminiInput(
-        priorMessages,
-        dto.message.trim(),
-      );
+    const memberContext = await this.aiTools.buildMemberContext(memberId);
+    const { history, message } = this.buildGeminiInput(
+      priorMessages,
+      dto.message.trim(),
+    );
 
-      const reply = await this.gemini.generateReply({
-        memberContext,
-        history,
-        message,
-      });
+    return {
+      conversation,
+      userMessage,
+      geminiInput: { memberContext, history, message },
+    };
+  }
 
-      const assistantMessage = await this.prisma.ai_messages.create({
-        data: {
-          conversation_id: conversation.id,
-          role: ai_message_role.assistant,
-          content: reply,
-          metadata: {
-            model: process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash',
-            toolsUsed: [
-              'getMemberProfile',
-              'getMembershipStatus',
-              'getAttendanceSummary',
-              'getBodyProgress',
-              'getCurrentWorkoutRoutine',
-            ],
-          },
+  /**
+   * Persiste la respuesta del asistente y actualiza la marca de tiempo de la
+   * conversación. Compartido por REST y streaming.
+   */
+  private async persistAssistantReply(conversationId: number, reply: string) {
+    const assistantMessage = await this.prisma.ai_messages.create({
+      data: {
+        conversation_id: conversationId,
+        role: ai_message_role.assistant,
+        content: reply,
+        metadata: {
+          model: process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash',
+          toolsUsed: [
+            'getMemberProfile',
+            'getMembershipStatus',
+            'getAttendanceSummary',
+            'getBodyProgress',
+            'getCurrentWorkoutRoutine',
+          ],
         },
-      });
+      },
+    });
 
-      await this.prisma.ai_conversations.update({
-        where: { id: conversation.id },
-        data: { actualizado_en: new Date() },
-      });
+    await this.prisma.ai_conversations.update({
+      where: { id: conversationId },
+      data: { actualizado_en: new Date() },
+    });
 
-      return {
-        conversationId: conversation.id,
-        reply: assistantMessage.content,
-        message: this.mapMessage(assistantMessage),
-      };
-    } catch (error) {
-      // Si Gemini falla, no dejar mensajes user huérfanos que rompen el historial.
-      await this.prisma.ai_messages.delete({ where: { id: userMessage.id } });
-      throw error;
-    }
+    return assistantMessage;
   }
 
   private buildGeminiInput(
     priorMessages: Array<{ role: ai_message_role; content: string }>,
     currentMessage: string,
-  ): { history: Array<{ role: 'user' | 'model'; text: string }>; message: string } {
+  ): {
+    history: Array<{ role: 'user' | 'model'; text: string }>;
+    message: string;
+  } {
     const mapped = priorMessages
       .filter((msg) => msg.role !== ai_message_role.system)
       .map((msg) => ({
@@ -172,7 +235,10 @@ export class AiChatService {
     return { history: mapped, message };
   }
 
-  private async findOwnedConversation(memberId: number, conversationId: number) {
+  private async findOwnedConversation(
+    memberId: number,
+    conversationId: number,
+  ) {
     const conversation = await this.prisma.ai_conversations.findUnique({
       where: { id: conversationId },
     });

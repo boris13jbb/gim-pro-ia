@@ -24,6 +24,8 @@ import { SalesModule } from './sales/sales.module';
 import { ReportsModule } from './reports/reports.module';
 import { BillingSriModule } from './billing-sri/billing-sri.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
+import { WebsocketModule } from './websocket/websocket.module';
+import { RealtimeModule } from './websocket/realtime.module';
 import { JwtAccessGuard } from './auth/guards/jwt-access.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { getThrottleConfig } from './config/throttle.config';
@@ -60,6 +62,8 @@ const throttleConfig = getThrottleConfig();
     ReportsModule,
     BillingSriModule,
     AiAssistantModule,
+    WebsocketModule,
+    RealtimeModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

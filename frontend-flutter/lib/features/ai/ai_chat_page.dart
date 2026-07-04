@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/api_response.dart';
 import '../../services/ai_service.dart';
+import '../../services/ai_socket_service.dart';
 import '../../widgets/state_views.dart';
 
 class AiChatPage extends StatefulWidget {
@@ -17,6 +20,7 @@ class _AiChatPageState extends State<AiChatPage> {
   final _scrollController = ScrollController();
 
   AiService get _aiService => context.read<AiService>();
+  AiSocketService get _aiSocket => context.read<AiSocketService>();
 
   bool _loadingHistory = true;
   bool _sending = false;
@@ -67,6 +71,9 @@ class _AiChatPageState extends State<AiChatPage> {
         setState(() => _loadingHistory = false);
         _scrollToBottom();
       }
+      // Conecta el socket en segundo plano para que el primer mensaje ya
+      // pueda usar streaming; si falla, el envío caerá al respaldo REST.
+      unawaited(_aiSocket.connect());
     }
   }
 
@@ -82,6 +89,55 @@ class _AiChatPageState extends State<AiChatPage> {
     _inputController.clear();
     _scrollToBottom();
 
+    // Preferir streaming por WebSocket; si no hay conexión, usar REST.
+    final connected = await _aiSocket.connect();
+    if (connected) {
+      await _sendStreaming(text);
+    } else {
+      await _sendRest(text);
+    }
+  }
+
+  /// Envío en tiempo real: la respuesta se va escribiendo token a token en una
+  /// burbuja que se actualiza con cada fragmento.
+  Future<void> _sendStreaming(String text) async {
+    final assistantBubble = _ChatBubble(isUser: false, text: '');
+    setState(() => _messages.add(assistantBubble));
+    _scrollToBottom();
+
+    try {
+      final conversationId = await _aiSocket.sendMessage(
+        message: text,
+        conversationId: _conversationId,
+        onChunk: (delta) {
+          if (!mounted) return;
+          setState(() => assistantBubble.text += delta);
+          _scrollToBottom();
+        },
+      );
+      _conversationId = conversationId;
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = _formatError(e);
+          // Quita la burbuja del asistente (vacía o incompleta) y reingresa el
+          // texto del socio para que pueda reintentar.
+          if (_messages.isNotEmpty && !_messages.last.isUser) {
+            _messages.removeLast();
+          }
+          if (_messages.isNotEmpty && _messages.last.isUser) {
+            _messages.removeLast();
+          }
+          _inputController.text = text;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Respaldo REST: se usa cuando el socket no pudo conectarse.
+  Future<void> _sendRest(String text) async {
     try {
       final result = await _aiService.sendMessage(
         message: text,
@@ -101,6 +157,7 @@ class _AiChatPageState extends State<AiChatPage> {
           if (_messages.isNotEmpty && _messages.last.isUser) {
             _messages.removeLast();
           }
+          _inputController.text = text;
         });
       }
     } finally {
@@ -233,8 +290,9 @@ class _AiChatPageState extends State<AiChatPage> {
 }
 
 class _ChatBubble {
-  const _ChatBubble({required this.isUser, required this.text});
+  _ChatBubble({required this.isUser, required this.text});
 
   final bool isUser;
-  final String text;
+  // Mutable: durante el streaming se le van concatenando los fragmentos.
+  String text;
 }

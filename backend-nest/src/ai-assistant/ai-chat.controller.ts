@@ -9,11 +9,7 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -58,7 +54,8 @@ export class AiChatController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: aiThrottleLimit, ttl: aiThrottleTtl } })
   @ApiOperation({
-    summary: 'Socio: enviar mensaje al asistente IA (REST; streaming en slice WS)',
+    summary:
+      'Socio: enviar mensaje al asistente IA (REST; streaming en slice WS)',
   })
   sendMessage(@CurrentUser() user: JwtPayload, @Body() dto: SendAiChatDto) {
     const memberId = this.resolveMemberId(user);

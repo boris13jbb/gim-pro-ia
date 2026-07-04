@@ -5,10 +5,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import {
-  GoogleGenerativeAI,
-  type Content,
-} from '@google/generative-ai';
+import { GoogleGenerativeAI, type Content } from '@google/generative-ai';
 
 export type GeminiHistoryMessage = {
   role: 'user' | 'model';
@@ -46,6 +43,73 @@ export class GeminiService {
     history: GeminiHistoryMessage[];
     message: string;
   }): Promise<string> {
+    const chat = this.createChatSession(params);
+
+    try {
+      const result = await chat.sendMessage(params.message);
+      const text = result.response.text()?.trim();
+
+      if (!text) {
+        throw new ServiceUnavailableException(
+          'El asistente no generó una respuesta. Intenta de nuevo.',
+        );
+      }
+
+      return text;
+    } catch (error) {
+      throw this.mapGeminiError(error);
+    }
+  }
+
+  /**
+   * Streaming (WebSockets): entrega la respuesta por fragmentos vía onChunk y
+   * devuelve el texto completo para persistirlo. La API key sigue solo en el
+   * servidor; el socio recibe únicamente texto generado, nunca claves.
+   */
+  async generateReplyStream(
+    params: {
+      memberContext: string;
+      history: GeminiHistoryMessage[];
+      message: string;
+    },
+    onChunk: (delta: string) => void,
+  ): Promise<string> {
+    const chat = this.createChatSession(params);
+
+    try {
+      const result = await chat.sendMessageStream(params.message);
+
+      let full = '';
+      for await (const chunk of result.stream) {
+        const piece = chunk.text();
+        if (piece) {
+          full += piece;
+          onChunk(piece);
+        }
+      }
+
+      const finalText = (await result.response).text()?.trim() || full.trim();
+
+      if (!finalText) {
+        throw new ServiceUnavailableException(
+          'El asistente no generó una respuesta. Intenta de nuevo.',
+        );
+      }
+
+      return finalText;
+    } catch (error) {
+      throw this.mapGeminiError(error);
+    }
+  }
+
+  /**
+   * Crea la sesión de chat con la instrucción de sistema y el contexto real del
+   * socio. Reutilizado por la respuesta REST (completa) y por el streaming (WS).
+   */
+  private createChatSession(params: {
+    memberContext: string;
+    history: GeminiHistoryMessage[];
+  }) {
     if (!this.isConfigured()) {
       throw new ServiceUnavailableException(
         'El asistente IA no está configurado. Define GEMINI_API_KEY en el servidor.',
@@ -65,21 +129,7 @@ export class GeminiService {
       }),
     );
 
-    try {
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(params.message);
-      const text = result.response.text()?.trim();
-
-      if (!text) {
-        throw new ServiceUnavailableException(
-          'El asistente no generó una respuesta. Intenta de nuevo.',
-        );
-      }
-
-      return text;
-    } catch (error) {
-      throw this.mapGeminiError(error);
-    }
+    return model.startChat({ history });
   }
 
   /**

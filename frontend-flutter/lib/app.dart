@@ -7,12 +7,14 @@ import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'routes/app_router.dart';
 import 'services/ai_service.dart';
+import 'services/ai_socket_service.dart';
 import 'services/api_client.dart';
 import 'services/attendance_service.dart';
 import 'services/auth_service.dart';
 import 'services/auth_storage.dart';
 import 'services/body_progress_service.dart';
 import 'services/member_service.dart';
+import 'services/realtime_notifications_service.dart';
 import 'services/theme_storage.dart';
 import 'services/workout_service.dart';
 
@@ -78,6 +80,17 @@ class _GymProAppState extends State<GymProApp> {
         ),
         Provider<AiService>(
           create: (_) => AiService(apiClient: _apiClient),
+        ),
+        // Socket del asistente IA (streaming). Se cierra al destruir el árbol.
+        Provider<AiSocketService>(
+          create: (_) => AiSocketService(authStorage: _authStorage),
+          dispose: (_, service) => service.dispose(),
+        ),
+        // Notificaciones en tiempo real del socio (asistencia/membresía).
+        // ChangeNotifierProvider libera el servicio (dispose) automáticamente.
+        ChangeNotifierProvider<RealtimeNotificationsService>(
+          create: (_) =>
+              RealtimeNotificationsService(authStorage: _authStorage),
         ),
       ],
       child: AppBootstrap(
