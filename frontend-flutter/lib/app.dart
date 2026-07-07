@@ -12,8 +12,18 @@ import 'services/api_client.dart';
 import 'services/attendance_service.dart';
 import 'services/auth_service.dart';
 import 'services/auth_storage.dart';
+import 'services/billing_sri_service.dart';
 import 'services/body_progress_service.dart';
+import 'services/sri_config_service.dart';
 import 'services/member_service.dart';
+import 'services/membership_service.dart';
+import 'services/plan_service.dart';
+import 'services/cash_register_service.dart';
+import 'services/product_service.dart';
+import 'services/reports_service.dart';
+import 'services/sales_service.dart';
+import 'services/staff_users_service.dart';
+import 'services/notifications_service.dart';
 import 'services/realtime_notifications_service.dart';
 import 'services/theme_storage.dart';
 import 'services/workout_service.dart';
@@ -69,6 +79,33 @@ class _GymProAppState extends State<GymProApp> {
         Provider<MemberService>(
           create: (_) => MemberService(apiClient: _apiClient),
         ),
+        Provider<PlanService>(
+          create: (_) => PlanService(apiClient: _apiClient),
+        ),
+        Provider<MembershipService>(
+          create: (_) => MembershipService(apiClient: _apiClient),
+        ),
+        Provider<ProductService>(
+          create: (_) => ProductService(apiClient: _apiClient),
+        ),
+        Provider<CashRegisterService>(
+          create: (_) => CashRegisterService(apiClient: _apiClient),
+        ),
+        Provider<SalesService>(
+          create: (_) => SalesService(apiClient: _apiClient),
+        ),
+        Provider<ReportsService>(
+          create: (_) => ReportsService(apiClient: _apiClient),
+        ),
+        Provider<StaffUsersService>(
+          create: (_) => StaffUsersService(apiClient: _apiClient),
+        ),
+        Provider<BillingSriService>(
+          create: (_) => BillingSriService(apiClient: _apiClient),
+        ),
+        Provider<SriConfigService>(
+          create: (_) => SriConfigService(apiClient: _apiClient),
+        ),
         Provider<BodyProgressService>(
           create: (_) => BodyProgressService(apiClient: _apiClient),
         ),
@@ -80,6 +117,9 @@ class _GymProAppState extends State<GymProApp> {
         ),
         Provider<AiService>(
           create: (_) => AiService(apiClient: _apiClient),
+        ),
+        Provider<NotificationsService>(
+          create: (_) => NotificationsService(apiClient: _apiClient),
         ),
         // Socket del asistente IA (streaming). Se cierra al destruir el árbol.
         Provider<AiSocketService>(

@@ -6,6 +6,8 @@ class MembershipInfo {
     this.endDate,
     required this.status,
     required this.effectiveStatus,
+    this.receiptId,
+    this.receiptType,
   });
 
   final int id;
@@ -14,6 +16,8 @@ class MembershipInfo {
   final DateTime? endDate;
   final String? status;
   final String effectiveStatus;
+  final int? receiptId;
+  final String? receiptType;
 
   factory MembershipInfo.fromJson(Map<String, dynamic> json) {
     return MembershipInfo(
@@ -23,6 +27,8 @@ class MembershipInfo {
       endDate: _parseDate(json['endDate']),
       status: json['status']?.toString(),
       effectiveStatus: json['effectiveStatus']?.toString() ?? 'sin_membresia',
+      receiptId: json['receiptId'] as int?,
+      receiptType: json['receiptType']?.toString(),
     );
   }
 }

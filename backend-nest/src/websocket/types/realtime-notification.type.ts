@@ -3,7 +3,7 @@
  * Se amplía a medida que nuevos flujos de dominio necesiten avisar al socio.
  */
 export type RealtimeNotificationType =
-  'attendance.registered' | 'membership.updated';
+  'attendance.registered' | 'membership.updated' | 'membership.expiring';
 
 /**
  * Notificación en tiempo real enviada al socio por WebSocket (namespace `/events`).

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -26,6 +27,8 @@ import { BillingSriModule } from './billing-sri/billing-sri.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { RealtimeModule } from './websocket/realtime.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MembershipAlertsModule } from './membership-alerts/membership-alerts.module';
 import { JwtAccessGuard } from './auth/guards/jwt-access.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { getThrottleConfig } from './config/throttle.config';
@@ -37,6 +40,7 @@ const throttleConfig = getThrottleConfig();
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: throttleConfig.global.ttl,
@@ -63,7 +67,9 @@ const throttleConfig = getThrottleConfig();
     BillingSriModule,
     AiAssistantModule,
     WebsocketModule,
+    NotificationsModule,
     RealtimeModule,
+    MembershipAlertsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { WsAuthModule } from './ws-auth.module';
 import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeService } from './realtime.service';
@@ -8,10 +9,10 @@ import { RealtimeService } from './realtime.service';
  *
  * Exporta RealtimeService para que los módulos de dominio (asistencia,
  * membresías) emitan notificaciones sin acoplarse al gateway ni a socket.io.
- * No importa módulos de dominio, por lo que no genera dependencias circulares.
+ * Persiste cada notificación vía NotificationsModule (Fase 16).
  */
 @Module({
-  imports: [WsAuthModule],
+  imports: [WsAuthModule, NotificationsModule],
   providers: [RealtimeGateway, RealtimeService],
   exports: [RealtimeService],
 })

@@ -1,7 +1,7 @@
 # Plan de Migración por Fases
 
 **Fecha:** 2026-07-04  
-**Estado:** Cierre (Fase 12) — Fases 00–11 implementadas; Fase 11 y cierre pendientes de aprobación
+**Estado:** Post-cierre — Fase 17 (alertas membresía por vencer) implementada; pendiente prueba manual
 
 | Fase | Nombre | Dependencias | Riesgo |
 |:---:|---|---|---|
@@ -17,7 +17,12 @@
 | 09 | Facturación SRI | Fases 03, 07 | **Crítico** ✅ |
 | 10 | Flutter app socio | Fases 02–05 mínimo | Medio ✅ |
 | 11 | IA Gemini + WebSockets | Fases 10, 05 | Medio 🔄 (pendiente aprobación) |
-| 12 | Cierre migración | Todas | Alto 🔄 (en curso) |
+| 12 | Cierre migración | Todas | Alto ✅ |
+| 13 | Flutter app staff (post-cierre) | Fases 02–07 API | Medio ✅ |
+| 14 | Extensiones staff (export + coaching) | Fase 13 | Bajo ✅ |
+| 15 | Facturación SRI staff Flutter | Fase 09 API | Medio ✅ |
+| 16 | Notificaciones persistentes socio | Fase 11 | Medio ✅ |
+| 17 | Alertas membresía por vencer | Fase 16 | Bajo 🔄 |
 
 ## Criterios para avanzar de fase
 

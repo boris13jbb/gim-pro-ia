@@ -1,4 +1,4 @@
-import '../core/models/member_user.dart';
+import '../core/models/auth_user.dart';
 import 'api_client.dart';
 import 'auth_storage.dart';
 
@@ -10,13 +10,31 @@ class AuthService {
   final ApiClient _apiClient;
   final AuthStorage _authStorage;
 
-  Future<AuthSession> login({
+  Future<AuthSession> loginMember({
     required String login,
     required String password,
   }) async {
     final session = await _apiClient.postData(
       '/auth/member/login',
       body: {'login': login, 'password': password},
+      parser: (raw) => AuthSession.fromJson(raw as Map<String, dynamic>),
+    );
+
+    await _authStorage.saveTokens(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    );
+    return session;
+  }
+
+  /// Login staff (admin, recepcionista, entrenador) vía `/auth/login`.
+  Future<AuthSession> loginStaff({
+    required String email,
+    required String password,
+  }) async {
+    final session = await _apiClient.postData(
+      '/auth/login',
+      body: {'email': email, 'password': password},
       parser: (raw) => AuthSession.fromJson(raw as Map<String, dynamic>),
     );
 
@@ -50,10 +68,10 @@ class AuthService {
     }
   }
 
-  Future<MemberUser> fetchProfile() async {
+  Future<AuthUser> fetchProfile() async {
     return _apiClient.getData(
       '/auth/me',
-      parser: (raw) => MemberUser.fromJson(raw as Map<String, dynamic>),
+      parser: (raw) => AuthUser.fromJson(raw as Map<String, dynamic>),
     );
   }
 

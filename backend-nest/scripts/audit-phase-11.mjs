@@ -63,7 +63,12 @@ function fail(name, detail) {
 
 async function main() {
   const results = [];
-  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY?.trim());
+  const aiProvider =
+    process.env.AI_PROVIDER?.trim().toLowerCase() === 'ollama'
+      ? 'ollama'
+      : 'gemini';
+  const aiConfigured =
+    aiProvider === 'ollama' || Boolean(process.env.GEMINI_API_KEY?.trim());
 
   const loginAdmin = await req('/auth/login', {
     method: 'POST',
@@ -146,14 +151,15 @@ async function main() {
     body: JSON.stringify({ message: 'Hola, ¿cómo está mi membresía?' }),
   });
 
-  if (geminiConfigured) {
+  if (aiConfigured) {
     const chatMessage = chat.body?.error?.message ?? '';
+    const providerLabel = aiProvider === 'ollama' ? 'Ollama' : 'Gemini';
     results.push(
       chat.status === 200 && chat.body?.data?.reply
-        ? ok('POST /ai/chat con Gemini', chat.body.data.conversationId)
+        ? ok(`POST /ai/chat con ${providerLabel}`, chat.body.data.conversationId)
         : chat.status === 429
-          ? ok('POST /ai/chat créditos Gemini agotados (429)', chatMessage.slice(0, 80))
-          : fail('POST /ai/chat con Gemini', `${chat.status} ${chatMessage}`),
+          ? ok(`POST /ai/chat créditos ${providerLabel} agotados (429)`, chatMessage.slice(0, 80))
+          : fail(`POST /ai/chat con ${providerLabel}`, `${chat.status} ${chatMessage}`),
     );
 
     const convId = chat.body?.data?.conversationId;
@@ -172,16 +178,20 @@ async function main() {
   } else {
     results.push(
       chat.status === 503
-        ? ok('POST /ai/chat sin GEMINI_API_KEY', 503)
-        : fail('POST /ai/chat sin GEMINI_API_KEY', chat.status),
+        ? ok('POST /ai/chat sin proveedor IA configurado', 503)
+        : fail('POST /ai/chat sin proveedor IA configurado', chat.status),
     );
   }
 
   const passed = results.filter((r) => r.ok).length;
   console.log(`\nResultado: ${passed}/${results.length} OK`);
-  if (!geminiConfigured) {
+  if (!aiConfigured) {
     console.log(
-      'Nota: define GEMINI_API_KEY en .env para probar respuesta real de Gemini.',
+      'Nota: define GEMINI_API_KEY o AI_PROVIDER=ollama en .env para probar respuesta real.',
+    );
+  } else if (aiProvider === 'ollama') {
+    console.log(
+      'Nota: requiere Ollama en ejecución (`ollama serve`) y modelo descargado (`ollama pull llama3.2`).',
     );
   }
   if (passed !== results.length) process.exit(1);

@@ -399,3 +399,138 @@ npm run audit:phase-11
 | 12 | Config | `.env.example` completo, sin secretos | — | todas las variables presentes | Verificado | OK |
 | 12 | Docs | Cierre, manual, README, plan, riesgos | — | coherentes con el código | Actualizados | OK |
 | 12 | IA/WebSockets | Prueba manual con `GEMINI_API_KEY` real | `/ai`, `/events` | streaming + notificaciones | — | Pendiente manual |
+
+## Fase 13 (Slice 1) — Flutter app staff: login y panel inicial
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 13 | Flutter | `flutter analyze` | — | sin errores | 0 errores, 14 avisos preexistentes | OK |
+| 13 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 13 | Login | Selector Socio / Staff | — | cambia título y flujo de login | — | Pendiente manual |
+| 13 | Login | Iniciar sesión staff (admin) | `POST /auth/login` | tokens + redirect `/staff/home` | — | Pendiente manual |
+| 13 | Staff home | Ver perfil y KPI asistencias hoy | `GET /auth/me`, `GET /attendance/today` | panel con datos reales | — | Pendiente manual |
+| 13 | Staff | Cerrar sesión | `POST /auth/logout` | vuelve a `/login` | — | Pendiente manual |
+| 13 | Seguridad | Socio intenta `/staff/home` | redirect | redirige a `/home` | Por diseño | OK (por diseño) |
+| 13 | Seguridad | Staff intenta `/home` (socio) | redirect | redirige a `/staff/home` | Por diseño | OK (por diseño) |
+| 13 | API | Timeouts Dio en Android | — | no aborta con 0ms | connect 15s / receive 30s | OK |
+
+## Fase 13 (Slice 2) — Socios y membresías staff
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 13 | Flutter | `flutter analyze` (slice 2) | — | sin errores | 0 errores | OK |
+| 13 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 13 | Staff nav | Pestaña Socios | — | listado con búsqueda | — | Pendiente manual |
+| 13 | Socios | Buscar por nombre/DNI | `GET /members?search=` | resultados filtrados | — | Pendiente manual |
+| 13 | Socios | Nuevo socio (admin/recep.) | `POST /members` | socio creado | — | Pendiente manual |
+| 13 | Socios | Ver detalle | `GET /members/:id` | datos + membresía | — | Pendiente manual |
+| 13 | Socios | Asignar plan | `POST /memberships` | membresía activa | — | Pendiente manual |
+| 13 | Seguridad | Entrenador sin botón crear | UI | solo lectura socios | Por diseño | OK (por diseño) |
+
+## Fase 13 (Slice 3) — Asistencias staff
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 13 | Flutter | `flutter analyze` (slice 3) | — | sin errores | 0 errores | OK |
+| 13 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 13 | Asistencias | Escanear QR carnet | `POST /attendance/scan` | ingreso registrado | — | Pendiente manual |
+| 13 | Asistencias | Validar DNI (paso 1) | `POST /attendance/validate` | preview socio/membresía | — | Pendiente manual |
+| 13 | Asistencias | Confirmar ingreso DNI | `POST /attendance/register` | asistencia creada | — | Pendiente manual |
+| 13 | Asistencias | Registro rápido DNI | `POST /attendance/scan` | un paso | — | Pendiente manual |
+| 13 | Asistencias | Listado hoy | `GET /attendance/today` | lista con hora/método | — | Pendiente manual |
+| 13 | Regla | Socio sin membresía vigente | validate/register | acceso denegado | Por diseño | OK (por diseño) |
+| 13 | Regla | Duplicado mismo día | register/scan | 409 conflicto | Por diseño | OK (por diseño) |
+
+## Fase 13 (Slice 4) — POS y caja staff
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 13 | Flutter | `flutter analyze` (slice 4) | — | sin errores | 0 errores | OK |
+| 13 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 13 | POS | Abrir caja | `POST /cash-registers/open` | caja abierta | — | Pendiente manual |
+| 13 | POS | Ver resumen caja | `GET /cash-registers/current/summary` | totales POS | — | Pendiente manual |
+| 13 | POS | Cobrar venta | `POST /sales` | venta + stock descontado | — | Pendiente manual |
+| 13 | POS | Venta sin caja | `POST /sales` | 400 error | Por diseño | OK (por diseño) |
+| 13 | POS | Cerrar caja | `POST /cash-registers/close` | diferencia calculada | — | Pendiente manual |
+| 13 | POS | Listado ventas hoy | `GET /sales` | historial del día | — | Pendiente manual |
+| 13 | Seguridad | Entrenador en `/staff/pos` | UI | acceso denegado | Por diseño | OK (por diseño) |
+
+## Fase 13 (Slice 5) — Reportes y usuarios admin staff
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 13 | Flutter | `flutter analyze` (slice 5) | — | sin errores | 0 errores | OK |
+| 13 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 13 | Reportes | Ver KPIs período | `GET /reports/financial/summary` | ingresos, gastos, utilidad | — | Pendiente manual |
+| 13 | Reportes | Cambiar rango fechas | query `fromDate`/`toDate` | recarga KPIs y movimientos | — | Pendiente manual |
+| 13 | Reportes | Listar movimientos | `GET /reports/financial/movements` | ingresos/gastos del período | — | Pendiente manual |
+| 13 | Usuarios | Listar staff | `GET /users` | lista usuarios sistema | — | Pendiente manual |
+| 13 | Usuarios | Crear usuario | `POST /users` | usuario nuevo en lista | — | Pendiente manual |
+| 13 | Usuarios | Activar/desactivar | `PATCH /users/:id/status` | cambio de estado | — | Pendiente manual |
+| 13 | Seguridad | Recepcionista en `/staff/reports` | UI | acceso denegado | Por diseño | OK (por diseño) |
+| 13 | Seguridad | Recepcionista en `/staff/users` | UI | acceso denegado | Por diseño | OK (por diseño) |
+| 13 | Seguridad | Admin no puede desactivarse a sí mismo | UI | switch oculto en fila propia | Por diseño | OK (por diseño) |
+
+## Fase 14 (Slice 1) — Exportación reportes staff
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 14 | Flutter | `flutter analyze` (slice 1) | — | sin errores | 0 errores | OK |
+| 14 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 14 | Reportes | Exportar Excel | `GET /reports/financial/export/excel` | archivo .xlsx compartible | — | Pendiente manual |
+| 14 | Reportes | Exportar PDF | `GET /reports/financial/export/pdf` | archivo .pdf compartible | — | Pendiente manual |
+
+## Fase 14 (Slice 2) — Coaching staff (progreso y rutinas)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 14 | Detalle socio | Progreso y rutina | navegación | abre coaching | — | Pendiente manual |
+| 14 | Coaching | Ver medidas y gráficos | `GET /body-progress/members/:id/measurements` | historial + charts | — | Pendiente manual |
+| 14 | Coaching | Nueva medida | `POST /body-progress/members/:id/measurements` | medida en lista | — | Pendiente manual |
+| 14 | Coaching | Eliminar medida | `DELETE /body-progress/measurements/:id` | medida removida | — | Pendiente manual |
+| 14 | Coaching | Ver rutina actual | `GET /workout-routines/members/:id/current` | días y notas | — | Pendiente manual |
+| 14 | Coaching | Asignar rutina | `POST /workout-routines/members/:id` | nueva versión visible | — | Pendiente manual |
+| 14 | Seguridad | Recepcionista en coaching | UI | solo lectura (sin FAB) | Por diseño | OK (por diseño) |
+| 14 | Seguridad | Entrenador sin permiso reportes | UI | sin módulo reportes | Por diseño | OK (por diseño) |
+
+## Fase 15 — Facturación SRI staff Flutter
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 15 | Flutter | `flutter analyze` | — | sin errores | 0 errores | OK |
+| 15 | Flutter | `flutter test` | — | pruebas OK | 1/1 OK | OK |
+| 15 | SRI | Bandeja comprobantes | `GET /electronic-receipts` | lista filtrable | — | Pendiente manual |
+| 15 | SRI | Detalle comprobante | `GET /electronic-receipts/:id` | líneas y estado | — | Pendiente manual |
+| 15 | POS | Emitir factura venta | `POST /electronic-receipts/issue/sale/:id` | comprobante creado | — | Pendiente manual |
+| 15 | Socios | Emitir factura membresía | `POST /electronic-receipts/issue/membership/:id` | comprobante creado | — | Pendiente manual |
+| 15 | SRI | Descargar RIDE PDF | `GET /electronic-receipts/:id/pdf` | PDF compartible | — | Pendiente manual |
+| 15 | SRI | Descargar XML | `GET /electronic-receipts/:id/xml` | XML compartible | — | Pendiente manual |
+| 15 | SRI | Reintentar autorización | `POST /electronic-receipts/:id/retry` | estado actualizado | — | Pendiente manual |
+| 15 | SRI | Nota de crédito | `POST /electronic-receipts/:id/credit-note` | NC emitida | — | Pendiente manual |
+| 15 | SRI | Enviar email | `POST /electronic-receipts/:id/send-email` | correo enviado (SMTP) | — | Pendiente manual |
+| 15 | Seguridad | Entrenador en `/staff/sri` | UI | acceso denegado | Por diseño | OK (por diseño) |
+| 15 | Admin | Config readiness | `GET /sri-config` | tarjeta fiscal en bandeja | — | Pendiente manual |
+
+## Fase 16 — Notificaciones persistentes socio
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 16 | Backend | `npm run build` + lint | — | OK | OK | OK |
+| 16 | Flutter | `flutter analyze` / `test` | — | OK | 0 errores / 1/1 | OK |
+| 16 | BD | `npm run db:push:legacy` | tabla `notifications` | tabla creada | — | Pendiente manual |
+| 16 | Socio | Abrir app (historial) | `GET /notifications` | lista persistida | — | Pendiente manual |
+| 16 | Socio | Registrar asistencia | WS + BD | notificación en campana tras reconectar | — | Pendiente manual |
+| 16 | Socio | Abrir campana | `PATCH /notifications/read-all` | badge en 0 | — | Pendiente manual |
+| 16 | Seguridad | Staff en `/notifications` | API | 403 | Por diseño | OK (por diseño) |
+
+## Fase 17 — Alertas membresía por vencer
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 17 | Backend | `npm run build` + lint | — | OK | OK | OK |
+| 17 | Flutter | `flutter analyze` / `test` | — | OK | OK | OK |
+| 17 | Admin | Ejecutar job manual | `POST /membership-alerts/run` | `{ sent, skipped, expired }` | — | Pendiente manual |
+| 17 | Socio | Membresía vence en 3 días + run | campana | notificación `membership.expiring` | — | Pendiente manual |
+| 17 | Socio | Segundo run mismo día | — | sin duplicado (`skipped` > 0) | — | Pendiente manual |
+| 17 | Socio | Membresía vencida ayer + run | campana | `membership.updated` vencida | — | Pendiente manual |
+| 17 | Cron | Job 08:00 (prod) | scheduler | alertas automáticas | — | Pendiente manual |

@@ -1784,3 +1784,481 @@ No aplica (sin cambios de código/BD). El rollback por fase sigue vigente en `do
 
 ### Próximo paso
 Aprobación final del usuario. Post-cierre: prueba manual de IA/WebSockets con `GEMINI_API_KEY`, planificar UI de staff en Flutter y endurecimiento para producción.
+
+---
+
+## 2026-07-06 — Post-cierre: proveedor Ollama para pruebas locales de IA
+
+### Cambio realizado
+Soporte de **Ollama** como proveedor alternativo del asistente IA en NestJS (`AI_PROVIDER=ollama`), para pruebas locales sin `GEMINI_API_KEY`. Misma API REST y WebSocket; Flutter sin cambios.
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/ai-system-instruction.ts`
+- `backend-nest/src/ai-assistant/types/ai-history.types.ts`
+- `backend-nest/src/ai-assistant/ollama.service.ts`
+- `backend-nest/src/ai-assistant/ai-model.service.ts`
+
+### Archivos modificados
+- `backend-nest/src/ai-assistant/gemini.service.ts` (instrucción compartida, tipos unificados)
+- `backend-nest/src/ai-assistant/ai-chat.service.ts` (usa `AiModelService`)
+- `backend-nest/src/ai-assistant/ai-assistant.module.ts`
+- `backend-nest/.env.example`
+- `backend-nest/scripts/audit-phase-11.mjs`
+- `docs/13-comandos-ejecucion.md`
+
+### Funcionalidad afectada
+Asistente IA (REST + streaming WS): puede usar Gemini u Ollama según `.env`.
+
+### Código reutilizado
+`AiChatService`, `AiToolsService`, gateways WebSocket y flujo Flutter intactos.
+
+### Duplicados revisados
+Prompt de sistema extraído a `ai-system-instruction.ts` (antes duplicado solo en Gemini).
+
+### Optimizaciones realizadas
+Fachada `AiModelService` evita duplicar lógica de selección de proveedor en chat/WS.
+
+### Comentarios agregados en el código
+Reglas de seguridad en `OllamaService` y `AiModelService` (Ollama solo en servidor).
+
+### Pruebas realizadas
+- `npm run build` → OK
+- `npm run lint` → 0 errores
+
+### Resultado
+Pendiente de prueba manual con Ollama en ejecución.
+
+### Riesgos detectados
+- Bajo. Ollama solo para desarrollo; producción debe usar `AI_PROVIDER=gemini`.
+
+### Rollback
+Quitar `OllamaService`/`AiModelService`, restaurar inyección directa de `GeminiService` en `AiChatService`.
+
+### Próximo paso
+Probar con `ollama pull llama3.2`, `AI_PROVIDER=ollama` y chat en Flutter.
+
+---
+
+## 2026-07-07 — Fase 13 (Slice 1): login staff y panel inicial en Flutter
+
+### Cambio realizado
+Primera entrega post-cierre: app Flutter con **login dual Socio/Staff**, rutas protegidas por `userType`, shell staff y panel inicial con KPI de asistencias de hoy. Corrección de import en `StaffShell` y timeouts Dio para Android/dispositivo físico.
+
+### Archivos creados
+- `docs/fases/fase-13-flutter-app-staff.md`
+- `frontend-flutter/lib/core/models/auth_user.dart`
+- `frontend-flutter/lib/features/staff/shell/staff_shell.dart`
+- `frontend-flutter/lib/features/staff/home/staff_home_page.dart`
+
+### Archivos modificados
+- `frontend-flutter/lib/services/auth_service.dart` (`loginMember`, `loginStaff`)
+- `frontend-flutter/lib/providers/auth_provider.dart` (`isStaff`, `isMember`)
+- `frontend-flutter/lib/features/auth/login_page.dart` (selector Socio/Staff)
+- `frontend-flutter/lib/routes/app_router.dart` (rutas `/staff/*`, redirects)
+- `frontend-flutter/lib/services/attendance_service.dart` (`fetchTodayCount`)
+- `frontend-flutter/lib/services/api_client.dart` (timeouts Dio 15s/30s)
+- `frontend-flutter/README.md`
+- `docs/04-plan-migracion-fases.md`
+- `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Login, navegación y nueva experiencia staff en Flutter. Sin cambios en backend.
+
+### Código reutilizado
+`ApiClient`, `AuthStorage`, `AttendanceService`, endpoints auth/attendance existentes.
+
+### Duplicados revisados
+Modelo `AuthUser` unifica socio/staff; no se duplicó lógica de tokens ni refresh.
+
+### Optimizaciones realizadas
+Redirects centralizados en `app_router`; staff sin WebSockets de socio.
+
+### Comentarios agregados en el código
+`StaffShell` documenta ausencia de WS socio; `api_client` documenta timeouts y dispositivo físico.
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 1 listo para prueba manual en dispositivo.
+
+### Riesgos detectados
+- Bajo. Prueba manual pendiente con credenciales staff reales y MySQL activo.
+
+### Rollback
+Revertir archivos Flutter de Fase 13 slice 1; backend sin cambios.
+
+### Próximo paso
+Prueba manual login staff + aprobación antes de slice 2 (socios/membresías staff).
+
+---
+
+## 2026-07-07 — Fase 13 (Slice 2): socios y membresías en app staff
+
+### Cambio realizado
+Módulo **Socios** para staff: listado con búsqueda/paginación, detalle con membresía e historial, alta de socio y asignación de plan. Navegación inferior Inicio/Socios en `StaffShell`. Permisos UI por rol (entrenador solo consulta).
+
+### Archivos creados
+- `frontend-flutter/lib/core/models/paged_members.dart`
+- `frontend-flutter/lib/core/models/plan.dart`
+- `frontend-flutter/lib/core/staff_permissions.dart`
+- `frontend-flutter/lib/services/plan_service.dart`
+- `frontend-flutter/lib/services/membership_service.dart`
+- `frontend-flutter/lib/widgets/membership_status_chip.dart`
+- `frontend-flutter/lib/features/staff/members/*.dart` (4 pantallas)
+
+### Archivos modificados
+- `member_service.dart`, `staff_shell.dart`, `staff_home_page.dart`
+- `app_router.dart`, `app.dart`, `frontend-flutter/README.md`
+- `docs/fases/fase-13-flutter-app-staff.md`, `docs/04-plan-migracion-fases.md`, `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+App Flutter staff: gestión básica de socios y membresías.
+
+### Código reutilizado
+`MemberUser`, `MembershipSummary`, `ApiClient`, endpoints NestJS existentes.
+
+### Duplicados revisados
+Servicios staff extendidos en `MemberService` en lugar de duplicar cliente HTTP.
+
+### Optimizaciones realizadas
+`StaffPermissions` centraliza reglas de UI; chip reutilizable para estado de membresía.
+
+### Comentarios agregados en el código
+Pantallas staff documentan que permisos finales los valida la API (403).
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 2 listo para prueba manual.
+
+### Riesgos detectados
+- Bajo. Entrenador no ve FAB de alta/asignación; API rechaza si intenta forzar endpoint.
+
+### Rollback
+Revertir archivos Flutter del slice 2; backend sin cambios.
+
+### Próximo paso
+Prueba manual en dispositivo y aprobación antes de slice 3 (asistencias staff).
+
+---
+
+## 2026-07-07 — Fase 13 (Slice 3): asistencias staff (DNI/QR)
+
+### Cambio realizado
+Módulo **Asistencias** para staff: escaneo QR con cámara (`mobile_scanner`), validación DNI (flujo PHP 2 pasos), registro rápido y listado de ingresos de hoy. Pestaña **Asistencias** en navegación inferior.
+
+### Archivos creados
+- `frontend-flutter/lib/core/models/attendance_staff.dart`
+- `frontend-flutter/lib/features/staff/attendance/staff_attendance_page.dart`
+- `frontend-flutter/lib/features/staff/attendance/staff_attendance_panels.dart`
+
+### Archivos modificados
+- `attendance_service.dart`, `staff_shell.dart`, `staff_home_page.dart`, `app_router.dart`
+- `pubspec.yaml`, `AndroidManifest.xml`, `ios/Runner/Info.plist`
+- Documentación fase 13, plan, checklist, README Flutter
+
+### Funcionalidad afectada
+Registro de asistencias desde app staff (admin, recepcionista, entrenador).
+
+### Código reutilizado
+Endpoints `validate`, `register`, `scan`, `today` sin cambios en NestJS.
+
+### Duplicados revisados
+Paneles en un solo archivo `staff_attendance_panels.dart`; servicio extendido sin duplicar HTTP.
+
+### Optimizaciones realizadas
+Cooldown tras escaneo QR para evitar registros duplicados; recarga automática del tab Hoy.
+
+### Comentarios agregados en el código
+QR codifica DNI (compatible PHP); reglas de negocio delegadas al backend.
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 3 listo para prueba manual con cámara.
+
+### Riesgos detectados
+- Medio en dispositivo: permiso de cámara; probar en teléfono físico Android.
+
+### Rollback
+Revertir archivos slice 3; quitar `mobile_scanner` si no se usa.
+
+### Próximo paso
+Prueba manual QR/DNI en dispositivo; aprobación antes de slice 4 (POS/caja).
+
+---
+
+## 2026-07-07 — Fase 13 (Slice 4): POS y caja en app staff
+
+### Cambio realizado
+Módulo **POS y caja** para admin/recepcionista: abrir/cerrar caja con cuadre, venta con carrito de productos activos, descuento, método de pago e historial de ventas del día. Ruta `/staff/pos` desde panel inicio.
+
+### Archivos creados
+- Modelos: `product.dart`, `cash_register.dart`, `sale.dart`
+- Servicios: `product_service.dart`, `cash_register_service.dart`, `sales_service.dart`
+- UI: `staff_pos_page.dart`, `staff_pos_panels.dart`
+
+### Archivos modificados
+- `staff_permissions.dart`, `staff_home_page.dart`, `app_router.dart`, `app.dart`
+- Documentación fase 13, plan, checklist, README Flutter
+
+### Funcionalidad afectada
+Ventas POS y gestión de caja desde Flutter staff.
+
+### Código reutilizado
+Endpoints Fase 07 sin cambios en backend.
+
+### Duplicados revisados
+Servicios POS separados por dominio; sin duplicar `ApiClient`.
+
+### Optimizaciones realizadas
+Tabs Caja/Venta/Ventas; recarga automática tras venta o cierre.
+
+### Comentarios agregados en el código
+Regla: venta requiere caja abierta (validado también en API).
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — slice 4 listo para prueba manual.
+
+### Riesgos detectados
+- Medio: probar flujo completo con productos reales y stock en BD.
+
+### Rollback
+Revertir archivos slice 4 Flutter.
+
+### Próximo paso
+Prueba manual POS; aprobación antes de slice 5 (reportes/usuarios).
+
+---
+
+## 2026-07-07 — Fase 13 (Slice 5): Reportes y usuarios admin en app staff
+
+### Cambio realizado
+Módulos **Reportes financieros** y **Usuarios staff** para administrador: dashboard con KPIs y movimientos por período; listado de usuarios del sistema, alta de usuario y activación/desactivación. Rutas `/staff/reports`, `/staff/users`, `/staff/users/new` desde panel inicio (solo admin).
+
+### Archivos creados
+- Modelos: `financial_report.dart`, `staff_user.dart`
+- Servicios: `reports_service.dart`, `staff_users_service.dart`
+- UI: `staff_reports_page.dart`, `staff_users_page.dart`, `staff_create_user_page.dart`
+
+### Archivos modificados
+- `staff_permissions.dart` (`canManageAdminModules`)
+- `api_client.dart` (`patchData`)
+- `staff_home_page.dart`, `app_router.dart`, `app.dart`
+- Documentación fase 13, plan, checklist, README Flutter
+
+### Funcionalidad afectada
+Reportes financieros y gestión de usuarios staff desde Flutter (solo admin).
+
+### Código reutilizado
+Endpoints Fase 02 (users) y Fase 08 (reports) sin cambios en backend.
+
+### Duplicados revisados
+Servicios separados por dominio; permisos centralizados en `StaffPermissions`.
+
+### Optimizaciones realizadas
+Carga paralela summary + movements; protección UI por rol además de 403 API.
+
+### Comentarios agregados en el código
+Regla: solo admin ve reportes y usuarios; no puede desactivarse a sí mismo.
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — Fase 13 completa (slices 1–5); listo para prueba manual integral.
+
+### Riesgos detectados
+- Bajo: export Excel/PDF no incluido en Flutter (endpoints API disponibles para fase futura).
+
+### Rollback
+Revertir archivos slice 5 Flutter.
+
+### Próximo paso
+Prueba manual con admin: reportes + usuarios; aprobación de cierre Fase 13.
+
+---
+
+## 2026-07-07 — Fase 14 (Slices 1–2): Exportación reportes y coaching staff
+
+### Cambio realizado
+**Slice 1:** Botones Exportar Excel/PDF en reportes financieros admin; descarga binaria vía API y compartir con `share_plus`.
+
+**Slice 2:** Módulo coaching por socio: pestañas Progreso (gráficos, medidas, alta/eliminación) y Rutina (ver actual, asignar nueva versión). Acceso desde detalle de socio; entrenador navega vía listado de socios.
+
+### Archivos creados
+- `downloaded_file.dart`, `file_export_helper.dart`
+- `staff_member_coaching_page.dart`, `staff_add_measurement_page.dart`, `staff_assign_routine_page.dart`
+- `docs/fases/fase-14-flutter-staff-extensiones.md`
+
+### Archivos modificados
+- `api_client.dart`, `reports_service.dart`, `staff_reports_page.dart`
+- `staff_permissions.dart`, `body_progress_service.dart`, `workout_service.dart`
+- `staff_member_detail_page.dart`, `staff_home_page.dart`, `app_router.dart`
+- `pubspec.yaml`, documentación plan/checklist/README
+
+### Funcionalidad afectada
+Exportación de reportes y gestión de progreso/rutinas desde app staff.
+
+### Código reutilizado
+Endpoints Fases 05 y 08; modelos `BodyProgressData`, `WorkoutRoutine` de app socio.
+
+### Duplicados revisados
+Gráficos de progreso en panel staff (patrón similar a socio, sin extraer widget compartido en esta fase).
+
+### Optimizaciones realizadas
+`downloadFile` genérico en ApiClient; `deleteData` para DELETE con envelope JSON.
+
+### Comentarios agregados en el código
+Reglas de permisos coaching en `StaffPermissions` y guards en pantallas.
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — Fase 14 lista para prueba manual.
+
+### Riesgos detectados
+- Medio en dispositivo: probar diálogo de compartir al exportar Excel/PDF.
+
+### Rollback
+Revertir archivos Fase 14 Flutter; quitar `path_provider`/`share_plus` si no se usan.
+
+### Próximo paso
+Prueba manual exportación + coaching; aprobación Fase 14.
+
+---
+
+## 2026-07-07 — Fase 15: Facturación SRI en app staff Flutter
+
+### Cambio realizado
+Módulo **Facturación SRI** para admin/recepcionista: bandeja de comprobantes con filtros, detalle con líneas y logs, descarga RIDE/XML, reintento SRI, nota de crédito y envío por email. Emisión desde ventas del día (POS) y desde historial de membresías sin comprobante. Configuración fiscal (readiness) visible para admin.
+
+### Archivos creados
+- Modelos: `electronic_receipt.dart`, `sri_config.dart`
+- Servicios: `billing_sri_service.dart`, `sri_config_service.dart`
+- UI: `staff_sri_page.dart`, `staff_sri_detail_page.dart`, `sri_status_chip.dart`
+- `docs/fases/fase-15-flutter-staff-sri.md`
+
+### Archivos modificados
+- `staff_permissions.dart`, `membership_summary.dart`
+- `staff_home_page.dart`, `staff_member_detail_page.dart`, `staff_pos_panels.dart`
+- `app_router.dart`, `app.dart`, documentación
+
+### Funcionalidad afectada
+Facturación electrónica SRI operable desde Flutter staff sin tocar backend.
+
+### Código reutilizado
+Endpoints Fase 09; `downloadFile` y `FileExportHelper` de Fase 14.
+
+### Duplicados revisados
+Servicio único `BillingSriService`; chip de estado reutilizable.
+
+### Pruebas realizadas
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Pendiente de aprobación — Fase 15 lista para prueba manual con ambiente SRI pruebas.
+
+### Riesgos detectados
+- Medio: emisión real requiere certificado P12 o simulación en ambiente 1; SMTP para email.
+
+### Rollback
+Revertir archivos Fase 15 Flutter.
+
+### Próximo paso
+Prueba manual SRI; aprobación Fase 15.
+
+---
+
+## 2026-07-07 — Fase 16: Notificaciones persistentes (socio)
+
+### Cambio realizado
+Tabla `notifications` en MySQL + módulo NestJS `notifications`. Cada evento de tiempo real (asistencia, membresía) se guarda en BD antes de emitir por WebSocket. Flutter socio carga historial al abrir la app y sincroniza “marcar leídas” con la API.
+
+### Archivos creados
+- Backend: `notifications/` (module, service, controller, mapper, dto)
+- Flutter: `notifications_service.dart`
+- `docs/fases/fase-16-notificaciones-persistentes.md`
+
+### Archivos modificados
+- `prisma/schema.prisma` (modelo `notifications`)
+- `realtime.service.ts`, `realtime.module.ts`, `app.module.ts`
+- `app_notification.dart`, `realtime_notifications_service.dart`, `app_shell.dart`, `app.dart`
+- `docs/07-endpoints-api.md`, plan, checklist
+
+### Funcionalidad afectada
+Notificaciones del socio: de solo memoria/WebSocket a persistencia + REST.
+
+### Código reutilizado
+`RealtimeService` y `ApiClient` existentes; sin duplicar lógica de dominio.
+
+### Pruebas realizadas
+- `npm run build` + `npm run lint` → OK
+- `flutter analyze` → 0 errores
+- `flutter test` → 1/1 OK
+
+### Resultado
+Aprobada (2026-07-07).
+
+### Riesgos detectados
+- Medio: migración BD obligatoria antes de probar en dispositivo.
+
+### Rollback
+Revertir código; `DROP TABLE notifications` si aplica.
+
+### Próximo paso
+Fase 17 — alertas proactivas de membresía.
+
+---
+
+## 2026-07-07 — Fase 17: Alertas membresía por vencer
+
+### Cambio realizado
+Job cron diario (`@nestjs/schedule`) que avisa a socios con membresía activa próxima a vencer (7/3/1/0 días). Persiste notificación + WebSocket. Incluye vencimiento automático de membresías vencidas en fecha y endpoint admin `POST /membership-alerts/run` para pruebas.
+
+### Archivos creados
+- `backend-nest/src/membership-alerts/` (module, service, scheduler, controller, config)
+- `docs/fases/fase-17-alertas-membresia.md`
+
+### Archivos modificados
+- `app.module.ts`, `.env.example`, `package.json` (+ `@nestjs/schedule`)
+- `notifications.service.ts` (`hasAlertKeyToday`)
+- `realtime-notification.type.ts` (`membership.expiring`)
+- `app_shell.dart` (icono campana)
+- `docs/04-plan-migracion-fases.md`, `07-endpoints-api.md`, `06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Notificaciones proactivas de membresía; sincronización de estado vencida vía cron.
+
+### Código reutilizado
+`RealtimeService`, `NotificationsService`; sin duplicar lógica de persistencia.
+
+### Pruebas realizadas
+- `npm run build` + `npm run lint` → OK
+- `flutter analyze` + `flutter test` → OK
+
+### Resultado
+Pendiente de aprobación — prueba manual con `POST /membership-alerts/run`.
+
+### Riesgos detectados
+- Bajo: horario del cron depende de zona horaria del servidor.
+
+### Rollback
+Quitar `MembershipAlertsModule` y `ScheduleModule`; revertir env y docs.
+
+### Próximo paso
+Prueba manual; aprobación Fase 17; endurecimiento producción o commits si el usuario lo solicita.

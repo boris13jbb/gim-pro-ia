@@ -1221,7 +1221,7 @@ Aislamiento: cada socket entra a la sala `member:{memberId}`; solo recibe sus pr
 
 | Dirección | Evento | Payload |
 |-----------|--------|---------|
-| Servidor → Cliente | `notification` | `{ "type": string, "title": string, "body": string, "data"?: object, "createdAt": string ISO }` |
+| Servidor → Cliente | `notification` | `{ "id": number, "type": string, "title": string, "body": string, "data"?: object, "createdAt": string ISO, "isRead": boolean }` |
 | Servidor → Cliente | `notification.error` | `{ "message": string }` (fallo de handshake, antes de desconectar) |
 
 `type` actuales: `attendance.registered` (check-in del socio) y `membership.updated` (membresía activada o cancelada).
@@ -1242,7 +1242,79 @@ connect  →  /events   (auth: { token: <access_token> })
 on       ←  notification { "type": "attendance.registered", "title": "Asistencia registrada", "body": "Tu ingreso...", "createdAt": "..." }
 ```
 
-Sin variables de entorno ni tablas nuevas: reutiliza `CORS_ORIGINS` y `JWT_ACCESS_SECRET`.
+Sin variables de entorno adicionales: reutiliza `CORS_ORIGINS` y `JWT_ACCESS_SECRET`. Las notificaciones se **persisten** en la tabla `notifications` (Fase 16).
+
+---
+
+## Fase 16 — Notificaciones persistidas (socio)
+
+### GET /notifications
+
+Listado del historial de notificaciones del socio autenticado.
+
+**Rol:** `socio`
+
+**Query:** `limit` (default 50, máx. 100)
+
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "type": "attendance.registered",
+        "title": "Asistencia registrada",
+        "body": "Tu ingreso...",
+        "isRead": false,
+        "createdAt": "2026-07-07T12:00:00.000Z"
+      }
+    ],
+    "unreadCount": 1
+  }
+}
+```
+
+### GET /notifications/unread-count
+
+Contador de no leídas. Rol: `socio`.
+
+### PATCH /notifications/read-all
+
+Marca todas como leídas. Rol: `socio`.
+
+### PATCH /notifications/:id/read
+
+Marca una notificación como leída (solo propias). Rol: `socio`.
+
+### Tipos WebSocket adicionales (Fase 17)
+
+| type | Cuándo |
+|------|--------|
+| `membership.expiring` | Job diario: membresía activa por vencer (7/3/1/0 días) |
+
+Payload incluye `data.alertKey`, `data.daysRemaining`, `data.membershipId`.
+
+---
+
+## Membership alerts (Fase 17)
+
+Variables: `MEMBERSHIP_ALERTS_ENABLED`, `MEMBERSHIP_ALERTS_CRON`, `MEMBERSHIP_ALERT_DAYS`.
+
+### POST /membership-alerts/run
+
+Ejecuta manualmente el job de alertas (mismo efecto que el cron). Rol: `admin`.
+
+**Response 200:**
+
+```json
+{
+  "sent": 2,
+  "skipped": 1,
+  "expired": 0
+}
+```
 
 ---
 

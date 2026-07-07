@@ -384,8 +384,30 @@ Copiar desde `backend-nest/.env.example` y configurar:
 | `DATABASE_URL` | MySQL/MariaDB — usar `127.0.0.1` en Windows |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Tokens JWT |
 | `CORS_ORIGINS` | Orígenes Flutter (incluir `:8080` para web) |
-| `GEMINI_API_KEY` | IA Fase 11 (solo servidor) |
+| `GEMINI_API_KEY` | IA Fase 11 con Gemini (solo servidor, producción) |
+| `AI_PROVIDER` | `gemini` (default) o `ollama` (pruebas locales) |
+| `OLLAMA_BASE_URL` | URL de Ollama (default `http://127.0.0.1:11434`) |
+| `OLLAMA_MODEL` | Modelo local (ej. `llama3.2`) |
 | `SMTP_*` | Envío de comprobantes SRI |
+
+### Pruebas IA con Ollama (local, sin API key)
+
+```bash
+# 1. Instalar Ollama: https://ollama.com
+ollama pull llama3.2
+ollama serve   # si no arranca automáticamente
+
+# 2. En backend-nest/.env
+AI_PROVIDER=ollama
+OLLAMA_MODEL=llama3.2
+# GEMINI_API_KEY puede quedar vacía
+
+# 3. Reiniciar NestJS y probar chat en la app Flutter o:
+cd backend-nest
+npm run audit:phase-11
+```
+
+Flutter **no cambia**: sigue llamando a NestJS (`POST /api/ai/chat` y WebSocket `/ai`).
 
 ---
 

@@ -6,22 +6,10 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { GoogleGenerativeAI, type Content } from '@google/generative-ai';
+import { buildSystemPrompt } from './ai-system-instruction';
+import type { AiHistoryMessage, AiReplyParams } from './types/ai-history.types';
 
-export type GeminiHistoryMessage = {
-  role: 'user' | 'model';
-  text: string;
-};
-
-const SYSTEM_INSTRUCTION = `Eres el asistente virtual del gimnasio Iron Gym para socios.
-Responde en español, de forma clara, motivacional y profesional.
-
-Reglas obligatorias:
-- Usa SOLO los datos del socio proporcionados en el contexto JSON. No inventes membresías, asistencias, medidas ni rutinas.
-- Si no hay datos suficientes, dilo con honestidad y sugiere registrar progreso o consultar en recepción.
-- No des diagnósticos médicos, prescripciones de medicamentos ni planes de rehabilitación clínica.
-- Orienta en hábitos generales, motivación y uso de las funciones de la app (carnet QR, progreso, rutina).
-- No reveles datos de otros socios ni información interna del staff.
-- Mantén respuestas concisas (máximo ~3 párrafos salvo que el socio pida detalle).`;
+export type GeminiHistoryMessage = AiHistoryMessage;
 
 /**
  * Integración con Gemini vía SDK oficial.
@@ -38,11 +26,11 @@ export class GeminiService {
     return this.apiKey.length > 0;
   }
 
-  async generateReply(params: {
-    memberContext: string;
-    history: GeminiHistoryMessage[];
-    message: string;
-  }): Promise<string> {
+  getModelName(): string {
+    return this.modelName;
+  }
+
+  async generateReply(params: AiReplyParams): Promise<string> {
     const chat = this.createChatSession(params);
 
     try {
@@ -67,11 +55,7 @@ export class GeminiService {
    * servidor; el socio recibe únicamente texto generado, nunca claves.
    */
   async generateReplyStream(
-    params: {
-      memberContext: string;
-      history: GeminiHistoryMessage[];
-      message: string;
-    },
+    params: AiReplyParams,
     onChunk: (delta: string) => void,
   ): Promise<string> {
     const chat = this.createChatSession(params);
@@ -108,7 +92,7 @@ export class GeminiService {
    */
   private createChatSession(params: {
     memberContext: string;
-    history: GeminiHistoryMessage[];
+    history: AiHistoryMessage[];
   }) {
     if (!this.isConfigured()) {
       throw new ServiceUnavailableException(
@@ -119,7 +103,7 @@ export class GeminiService {
     const genAI = new GoogleGenerativeAI(this.apiKey);
     const model = genAI.getGenerativeModel({
       model: this.modelName,
-      systemInstruction: `${SYSTEM_INSTRUCTION}\n\nContexto del socio (datos reales de la BD, no inventar):\n${params.memberContext}`,
+      systemInstruction: buildSystemPrompt(params.memberContext),
     });
 
     const history: Content[] = this.normalizeHistory(params.history).map(
@@ -136,10 +120,8 @@ export class GeminiService {
    * Gemini exige alternancia user/model. Si hubo fallos previos pueden quedar
    * mensajes user huérfanos; se fusionan para no romper la conversación.
    */
-  private normalizeHistory(
-    history: GeminiHistoryMessage[],
-  ): GeminiHistoryMessage[] {
-    const normalized: GeminiHistoryMessage[] = [];
+  private normalizeHistory(history: AiHistoryMessage[]): AiHistoryMessage[] {
+    const normalized: AiHistoryMessage[] = [];
 
     for (const item of history) {
       const last = normalized[normalized.length - 1];

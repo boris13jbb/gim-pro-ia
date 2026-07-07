@@ -8,7 +8,7 @@ import {
 import { ai_message_role, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { AiToolsService } from './ai-tools.service';
-import { GeminiService } from './gemini.service';
+import { AiModelService } from './ai-model.service';
 import { SendAiChatDto } from './dto/send-ai-chat.dto';
 
 @Injectable()
@@ -23,7 +23,7 @@ export class AiChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiTools: AiToolsService,
-    private readonly gemini: GeminiService,
+    private readonly aiModel: AiModelService,
   ) {}
 
   async listConversations(memberId: number) {
@@ -78,7 +78,7 @@ export class AiChatService {
     const turn = await this.prepareTurn(memberId, dto);
 
     try {
-      const reply = await this.gemini.generateReply(turn.geminiInput);
+      const reply = await this.aiModel.generateReply(turn.modelInput);
       const assistantMessage = await this.persistAssistantReply(
         turn.conversation.id,
         reply,
@@ -112,8 +112,8 @@ export class AiChatService {
     const turn = await this.prepareTurn(memberId, dto);
 
     try {
-      const reply = await this.gemini.generateReplyStream(
-        turn.geminiInput,
+      const reply = await this.aiModel.generateReplyStream(
+        turn.modelInput,
         onChunk,
       );
       const assistantMessage = await this.persistAssistantReply(
@@ -136,7 +136,7 @@ export class AiChatService {
   /**
    * Prepara un turno de conversación: valida límite diario, resuelve/crea la
    * conversación (solo del socio), guarda el mensaje del usuario y arma el
-   * contexto real + historial para Gemini.
+   * contexto real + historial para el proveedor de IA activo (Gemini u Ollama).
    */
   private async prepareTurn(memberId: number, dto: SendAiChatDto) {
     await this.ensureDailyLimit(memberId);
@@ -165,7 +165,7 @@ export class AiChatService {
     });
 
     const memberContext = await this.aiTools.buildMemberContext(memberId);
-    const { history, message } = this.buildGeminiInput(
+    const { history, message } = this.buildModelInput(
       priorMessages,
       dto.message.trim(),
     );
@@ -173,7 +173,7 @@ export class AiChatService {
     return {
       conversation,
       userMessage,
-      geminiInput: { memberContext, history, message },
+      modelInput: { memberContext, history, message },
     };
   }
 
@@ -188,7 +188,8 @@ export class AiChatService {
         role: ai_message_role.assistant,
         content: reply,
         metadata: {
-          model: process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash',
+          provider: this.aiModel.getProvider(),
+          model: this.aiModel.getActiveModelName(),
           toolsUsed: [
             'getMemberProfile',
             'getMembershipStatus',
@@ -208,7 +209,7 @@ export class AiChatService {
     return assistantMessage;
   }
 
-  private buildGeminiInput(
+  private buildModelInput(
     priorMessages: Array<{ role: ai_message_role; content: string }>,
     currentMessage: string,
   ): {

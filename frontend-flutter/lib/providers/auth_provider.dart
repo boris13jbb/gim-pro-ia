@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/models/api_response.dart';
-import '../core/models/member_user.dart';
+import '../core/models/auth_user.dart';
 import '../services/auth_service.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -12,9 +12,12 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
   AuthStatus status = AuthStatus.unknown;
-  MemberUser? user;
+  AuthUser? user;
   String? errorMessage;
   bool isLoading = false;
+
+  bool get isStaff => user?.isStaff ?? false;
+  bool get isMember => user?.isMember ?? false;
 
   Future<void> bootstrap() async {
     isLoading = true;
@@ -47,13 +50,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String login, String password) async {
+  Future<bool> loginMember(String login, String password) async {
+    return _login(
+      () => _authService.loginMember(login: login, password: password),
+    );
+  }
+
+  Future<bool> loginStaff(String email, String password) async {
+    return _login(
+      () => _authService.loginStaff(email: email, password: password),
+    );
+  }
+
+  Future<bool> _login(Future<AuthSession> Function() call) async {
     errorMessage = null;
     isLoading = true;
     notifyListeners();
 
     try {
-      final session = await _authService.login(login: login, password: password);
+      final session = await call();
       user = session.user;
       status = AuthStatus.authenticated;
       return true;

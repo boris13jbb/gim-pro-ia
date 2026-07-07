@@ -5,8 +5,10 @@ import { BodyProgressModule } from '../body-progress/body-progress.module';
 import { WorkoutRoutinesModule } from '../workout-routines/workout-routines.module';
 import { AiChatController } from './ai-chat.controller';
 import { AiChatService } from './ai-chat.service';
+import { AiModelService } from './ai-model.service';
 import { AiToolsService } from './ai-tools.service';
 import { GeminiService } from './gemini.service';
+import { OllamaService } from './ollama.service';
 
 @Module({
   imports: [
@@ -16,7 +18,13 @@ import { GeminiService } from './gemini.service';
     WorkoutRoutinesModule,
   ],
   controllers: [AiChatController],
-  providers: [AiChatService, AiToolsService, GeminiService],
-  exports: [AiChatService, GeminiService],
+  providers: [
+    AiChatService,
+    AiToolsService,
+    GeminiService,
+    OllamaService,
+    AiModelService,
+  ],
+  exports: [AiChatService, AiModelService],
 })
 export class AiAssistantModule {}

@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../core/config/api_config.dart';
 import '../core/models/app_notification.dart';
 import 'auth_storage.dart';
+import 'notifications_service.dart';
 
 /// Cliente WebSocket de notificaciones en tiempo real del socio (namespace
 /// `/events`).
@@ -86,16 +87,55 @@ class RealtimeNotificationsService extends ChangeNotifier {
     final notification = AppNotification.fromSocket(data);
     if (notification == null) return;
 
+    if (notification.id != null) {
+      final existingIndex = _items.indexWhere((n) => n.id == notification.id);
+      if (existingIndex >= 0) {
+        _items[existingIndex] = notification;
+        notifyListeners();
+        return;
+      }
+    }
+
     _items.insert(0, notification);
     if (_items.length > _maxItems) {
       _items.removeRange(_maxItems, _items.length);
     }
-    _unread++;
+    if (!notification.isRead) {
+      _unread++;
+    }
     _controller.add(notification);
     notifyListeners();
   }
 
-  /// Marca todas las notificaciones como leídas (resetea el badge).
+  /// Carga historial persistido desde la API (Fase 16).
+  Future<void> loadPersisted(NotificationsService service) async {
+    try {
+      final response = await service.fetchMyNotifications();
+      _items
+        ..clear()
+        ..addAll(response.items);
+      _unread = response.unreadCount;
+      notifyListeners();
+    } catch (_) {
+      // Sin historial persistido: la app sigue con WebSocket en tiempo real.
+    }
+  }
+
+  /// Marca como leídas en API y en memoria.
+  Future<void> markAllReadPersisted(NotificationsService service) async {
+    try {
+      await service.markAllAsRead();
+    } catch (_) {
+      // Si falla la API, al menos limpia el badge local.
+    }
+    markAllRead();
+    for (var i = 0; i < _items.length; i++) {
+      _items[i] = _items[i].copyWith(isRead: true);
+    }
+    notifyListeners();
+  }
+
+  /// Marca todas las notificaciones como leídas (solo local).
   void markAllRead() {
     if (_unread == 0) return;
     _unread = 0;

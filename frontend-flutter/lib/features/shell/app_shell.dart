@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/app_notification.dart';
+import '../../services/notifications_service.dart';
 import '../../services/realtime_notifications_service.dart';
 
 /// Contenedor con la barra de navegación inferior del área de socio.
@@ -40,8 +41,10 @@ class _AppShellState extends State<AppShell> {
     _notifications = context.read<RealtimeNotificationsService>();
     _subscription = _notifications.onNotification.listen(_showSnackBar);
     // Conecta tras el primer frame (el shell solo se muestra ya autenticado).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notifications.connect();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final api = context.read<NotificationsService>();
+      await _notifications.loadPersisted(api);
+      await _notifications.connect();
     });
   }
 
@@ -77,7 +80,8 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _openNotifications() {
-    _notifications.markAllRead();
+    final api = context.read<NotificationsService>();
+    _notifications.markAllReadPersisted(api);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -228,6 +232,8 @@ class _NotificationsSheet extends StatelessWidget {
         return Icons.how_to_reg;
       case 'membership.updated':
         return Icons.card_membership;
+      case 'membership.expiring':
+        return Icons.event_busy;
       default:
         return Icons.notifications;
     }

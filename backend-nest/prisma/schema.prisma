@@ -278,6 +278,7 @@ model socios {
   ventas           ventas[]
   refreshTokens    auth_refresh_tokens[]
   ai_conversations ai_conversations[]
+  notifications    notifications[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -530,4 +531,21 @@ enum ai_message_role {
   user
   assistant
   system
+}
+
+/// Notificaciones persistidas del socio (Fase 16). Complementan WebSocket `/events`.
+model notifications {
+  id         Int       @id @default(autoincrement())
+  member_id  Int
+  type       String    @db.VarChar(60)
+  title      String    @db.VarChar(160)
+  body       String    @db.VarChar(500)
+  data       Json?
+  read_at    DateTime? @db.DateTime(0)
+  created_at DateTime  @default(now()) @db.DateTime(0)
+  updated_at DateTime  @updatedAt @db.DateTime(0)
+  socios     socios    @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_notifications_member")
+
+  @@index([member_id, created_at], map: "idx_notifications_member_created")
+  @@index([member_id, read_at], map: "idx_notifications_member_read")
 }
