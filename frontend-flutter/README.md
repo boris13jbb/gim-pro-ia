@@ -44,6 +44,79 @@ flutter run -d windows
 # o: flutter run   (Android/iOS)
 ```
 
+## APK para compartir (ngrok)
+
+Para generar APKs livianas por arquitectura apuntando al túnel ngrok activo:
+
+```powershell
+# Terminal 1: backend
+cd backend-nest
+npm run start:dev
+
+# Terminal 2: túnel público
+ngrok http 3000
+
+# Terminal 3: build APK (desde la raíz del repo)
+.\scripts\build-apk-ngrok.ps1
+```
+
+Salida en `apk-dist/`:
+- `IronGym-ngrok-arm64.apk` — celulares modernos (recomendada)
+- `IronGym-ngrok-arm32.apk` — celulares antiguos 32 bits
+- `IronGym-ngrok-x86_64.apk` — emulador Android en PC
+
+Opciones:
+
+```powershell
+.\scripts\build-apk-ngrok.ps1 -UniversalApk          # incluye APK universal (~71 MB)
+.\scripts\build-apk-ngrok.ps1 -ApiUrl "https://..."  # URL manual si ngrok no expone API local
+.\scripts\build-apk-ngrok.ps1 -SkipHealthCheck       # omite verificación de puerto/health
+```
+
+## Flutter Web con ngrok
+
+### Desarrollo local (Chrome en tu PC, API por ngrok)
+
+```powershell
+.\scripts\web-ngrok.ps1
+```
+
+Abre `http://localhost:8080` y usa la API pública de ngrok.
+
+### Compartir web por internet (cualquier navegador)
+
+```powershell
+# Terminal 1 — Backend
+cd backend-nest
+npm run start:dev
+
+# Terminal 2 — Túneles API (3000) + Web (8080)
+.\scripts\start-ngrok-gym.ps1
+
+# Terminal 3 — Build + servidor web local
+.\scripts\web-ngrok.ps1 -Mode Share
+```
+
+Luego:
+1. Reinicia el backend si el script actualizó `CORS_ORIGINS`.
+2. Abre la URL **web** que muestra ngrok (puerto 8080).
+3. La API pública es la URL **api** de ngrok (puerto 3000).
+
+Salida estática en `web-dist/` si necesitas desplegar en otro hosting.
+
+### Comando manual (sin script)
+
+```powershell
+cd frontend-flutter
+flutter run -d chrome --web-port=8080 --dart-define=API_BASE_URL=https://TU-URL.ngrok-free.app/api
+```
+
+Build para producción:
+
+```powershell
+flutter build web --dart-define=API_BASE_URL=https://TU-URL.ngrok-free.app/api
+```
+
 ## Funcionalidades (Fases 10–11 — Socios)
 
 - Login socio (`POST /auth/member/login`)

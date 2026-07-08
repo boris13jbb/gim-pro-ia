@@ -2,6 +2,68 @@
 
 ---
 
+## 2026-07-07 — Manual integración base de datos
+
+### Cambio realizado
+Creación de `docs/15-manual-integracion-base-datos.md` con guía paso a paso de la integración MySQL/MariaDB + Prisma 7 + NestJS: configuración `.env`, import legacy, `db pull`, `db push:legacy`, `PrismaService`, health check, transacciones, flujo seguro de cambios y troubleshooting.
+
+### Archivos modificados
+- `docs/05-bitacora-migracion.md`
+- `docs/14-estructura-proyecto.md`
+
+### Archivos creados
+- `docs/15-manual-integracion-base-datos.md`
+
+### Funcionalidad afectada
+Documentación (sin cambios en código).
+
+### Código reutilizado
+Información consolidada desde `docs/02`, `docs/08`, `docs/11`, `docs/13`, `backend-nest/src/database/` y scripts `import-legacy-db.mjs` / `db-push-legacy.mjs`.
+
+### Duplicados revisados
+No se duplicó contenido operativo de `docs/13-comandos-ejecucion.md`; el manual 15 profundiza el flujo y la arquitectura de integración.
+
+### Pruebas realizadas
+Revisión cruzada con archivos reales del repositorio (`prisma.service.ts`, `schema.prisma`, scripts npm).
+
+### Resultado
+Aprobado.
+
+### Riesgos detectados
+Sin riesgos detectados.
+
+### Rollback
+Eliminar `docs/15-manual-integracion-base-datos.md` y revertir enlaces en doc 14.
+
+---
+
+## 2026-07-07 — Documentación estructura del proyecto
+
+### Cambio realizado
+Creación de `docs/14-estructura-proyecto.md` con el árbol completo del monorepo (backend, Flutter, docs, legacy PHP), módulos NestJS, features Flutter, modelos Prisma y referencias cruzadas. Enlaces añadidos en `README.md` y `docs/03-arquitectura-objetivo-nestjs-flutter.md`.
+
+### Archivos modificados
+- `README.md`
+- `docs/03-arquitectura-objetivo-nestjs-flutter.md`
+- `docs/05-bitacora-migracion.md`
+
+### Archivos creados
+- `docs/14-estructura-proyecto.md`
+
+### Funcionalidad afectada
+Documentación del proyecto (sin cambios en código).
+
+### Resultado
+Aprobado.
+
+### Riesgos detectados
+Sin riesgos detectados.
+
+### Rollback
+Eliminar `docs/14-estructura-proyecto.md` y revertir enlaces en README y doc 03.
+
+---
+
 ## Fecha
 2026-07-02
 

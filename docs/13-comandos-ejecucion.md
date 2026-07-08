@@ -39,6 +39,8 @@ git --version
 
 ## 3. Base de datos (primera vez)
 
+> Guía detallada del flujo completo: `docs/15-manual-integracion-base-datos.md`
+
 ### 3.1 Importar BD legacy (opcional, si no tienes datos)
 
 Desde `backend-nest/`:

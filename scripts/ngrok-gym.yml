@@ -1,0 +1,18 @@
+version: "3"
+
+# Túneles para compartir Iron Gym (API + Flutter Web).
+#
+# IMPORTANTE: este archivo NO incluye authtoken (no va al repo).
+# Usa el script que combina configs:
+#   .\scripts\start-ngrok-gym.ps1
+#
+# O manualmente:
+#   ngrok start --config $env:LOCALAPPDATA\ngrok\ngrok.yml --config scripts/ngrok-gym.yml api web
+
+tunnels:
+  api:
+    addr: 3000
+    proto: http
+  web:
+    addr: 8088
+    proto: http

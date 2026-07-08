@@ -1,6 +1,6 @@
 # Arquitectura Objetivo — NestJS + Flutter
 
-**Estado:** Actualizado (Fases 01–02 completadas)
+**Estado:** Actualizado (Fases 01–17 implementadas; detalle en `docs/14-estructura-proyecto.md`)
 
 ## Principios
 
@@ -29,3 +29,5 @@ Flutter App  ──HTTP/JWT──►  NestJS API  ──Prisma──►  MySQL
 ```
 
 Ver reglas del proyecto en `.cursor/rules/`.
+
+Árbol completo de carpetas y módulos: **`docs/14-estructura-proyecto.md`**.

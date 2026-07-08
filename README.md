@@ -7,7 +7,7 @@ Migración del sistema PHP MVC (`gym-system/`) hacia **NestJS** (backend) + **Fl
 - `backend-nest/` — API NestJS con JWT, Prisma, IA (Gemini) y WebSockets
 - `frontend-flutter/` — App Flutter para socios (chat IA, notificaciones en tiempo real)
 - `gym-system/` — Sistema PHP legacy (solo local, excluido del repositorio)
-- `docs/` — Documentación de migración por fases
+- `docs/` — Documentación de migración por fases (ver `docs/14-estructura-proyecto.md`)
 
 ## Requisitos
 

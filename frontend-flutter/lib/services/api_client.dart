@@ -25,7 +25,11 @@ class ApiClient {
             connectTimeout: const Duration(seconds: 15),
             receiveTimeout: const Duration(seconds: 30),
             sendTimeout: const Duration(seconds: 15),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (ApiConfig.baseUrl.contains('ngrok'))
+                'ngrok-skip-browser-warning': 'true',
+            },
           ),
         );
     _dio.interceptors.add(
