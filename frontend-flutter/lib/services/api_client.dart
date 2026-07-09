@@ -202,22 +202,30 @@ class ApiClient {
     }
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
+      final base = ApiConfig.baseUrl;
+      if (!kIsWeb && Platform.isAndroid && base.contains('127.0.0.1')) {
+        return 'No se pudo conectar con $base.\n\n'
+            'En teléfono físico, 127.0.0.1 es el propio móvil, no tu PC.\n'
+            'Usa la IP de tu PC en la misma red WiFi, por ejemplo:\n'
+            'flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3001/api\n\n'
+            'Luego reinstala la app o genera un APK con esa URL.';
+      }
       if (!kIsWeb &&
           Platform.isAndroid &&
-          ApiConfig.baseUrl.contains('10.0.2.2')) {
+          base.contains('10.0.2.2')) {
         return 'No se pudo conectar. La URL 10.0.2.2 solo funciona en '
             'emulador Android, no en teléfono físico.\n\n'
             'Ejecuta la app con la IP de tu PC (misma red WiFi):\n'
-            'flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3000/api';
+            'flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3001/api';
       }
       if (kIsWeb) {
-        return 'No se pudo conectar con la API (${ApiConfig.baseUrl}). '
-            'Verifique que el backend esté activo en :3000 y que CORS incluya '
+        return 'No se pudo conectar con la API ($base). '
+            'Verifique que el backend esté activo y que CORS incluya '
             'el puerto de Flutter web (ej. http://localhost:8080).';
       }
-      return 'No se pudo conectar con ${ApiConfig.baseUrl}. '
+      return 'No se pudo conectar con $base. '
           'Verifique que el backend esté activo (npm run start:dev). '
-          'En dispositivo físico use: flutter run --dart-define=API_BASE_URL=http://IP_PC:3000/api';
+          'En dispositivo físico use: flutter run --dart-define=API_BASE_URL=http://IP_PC:3001/api';
     }
     return error.message ?? 'Error de red';
   }

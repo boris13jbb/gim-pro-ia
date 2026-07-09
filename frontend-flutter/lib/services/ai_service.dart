@@ -39,17 +39,20 @@ class AiConversationSummary {
   AiConversationSummary({
     required this.id,
     this.title,
+    this.status = 'active',
     this.lastMessage,
   });
 
   final int id;
   final String? title;
+  final String status;
   final AiMessage? lastMessage;
 
   factory AiConversationSummary.fromJson(Map<String, dynamic> json) {
     return AiConversationSummary(
       id: _requireInt(json['id'], 'id'),
       title: json['title'] as String?,
+      status: json['status']?.toString() ?? 'active',
       lastMessage: json['lastMessage'] != null
           ? AiMessage.fromJson(
               Map<String, dynamic>.from(json['lastMessage'] as Map),
@@ -64,10 +67,12 @@ class AiConversationDetail {
     required this.id,
     required this.messages,
     this.title,
+    this.status = 'active',
   });
 
   final int id;
   final String? title;
+  final String status;
   final List<AiMessage> messages;
 
   factory AiConversationDetail.fromJson(Map<String, dynamic> json) {
@@ -75,6 +80,7 @@ class AiConversationDetail {
     return AiConversationDetail(
       id: _requireInt(json['id'], 'id'),
       title: json['title'] as String?,
+      status: json['status']?.toString() ?? 'active',
       messages: raw
           .map((e) => AiMessage.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
@@ -106,9 +112,12 @@ class AiService {
 
   final ApiClient _apiClient;
 
-  Future<List<AiConversationSummary>> listConversations() {
+  Future<List<AiConversationSummary>> listConversations({
+    String status = 'active',
+  }) {
     return _apiClient.getData(
       '/ai/conversations',
+      query: {'status': status},
       parser: (raw) {
         final list = raw as List<dynamic>;
         return list
@@ -142,6 +151,29 @@ class AiService {
       },
       parser: (raw) =>
           AiChatResult.fromJson(Map<String, dynamic>.from(raw as Map)),
+    );
+  }
+
+  Future<void> archiveConversation(int id) {
+    return _updateConversationStatus(id, 'archived');
+  }
+
+  Future<void> restoreConversation(int id) {
+    return _updateConversationStatus(id, 'active');
+  }
+
+  Future<void> deleteConversation(int id) {
+    return _apiClient.deleteData<Object?>(
+      '/ai/conversations/$id',
+      parser: (_) => null,
+    );
+  }
+
+  Future<void> _updateConversationStatus(int id, String status) {
+    return _apiClient.patchData<Object?>(
+      '/ai/conversations/$id/status',
+      body: {'status': status},
+      parser: (_) => null,
     );
   }
 }

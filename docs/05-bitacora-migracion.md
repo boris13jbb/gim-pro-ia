@@ -2,6 +2,90 @@
 
 ---
 
+## 2026-07-08 — Fix: API ngrok inaccesible (login web)
+
+### Cambio realizado
+El login Flutter Web vía ngrok fallaba porque el backend estaba detenido y `.env` tenía `PORT=3001` mientras los túneles ngrok apuntaban a `:3000`. Se restauró `PORT=3000` y se mejoró CORS en development para aceptar orígenes `*.ngrok-free.app` sin editar `.env` cada vez que ngrok rota la URL.
+
+### Archivos modificados
+- `backend-nest/.env` (`PORT=3000`)
+- `backend-nest/src/main.ts` (CORS dinámico para ngrok en development)
+- `docs/05-bitacora-migracion.md`
+
+### Funcionalidad afectada
+Login Flutter Web / APK cuando la API se expone por ngrok.
+
+### Código reutilizado
+Misma variable `CORS_ORIGINS`; se amplía el callback de origen solo en development.
+
+### Duplicados revisados
+No se crearon servicios ni scripts nuevos.
+
+### Optimizaciones realizadas
+CORS ngrok deja de requerir actualizar `.env` manualmente en cada reinicio del túnel (plan free).
+
+### Comentarios agregados en el código
+Explicación del callback CORS y del patrón `*.ngrok-free.app` en `main.ts`.
+
+### Pruebas realizadas
+- `GET http://127.0.0.1:3000/api/health` → 200 (database up)
+- `GET https://91e3-…ngrok-free.app/api/health` → 200
+- Backend `npm run start:dev` arrancó en `:3000`
+
+### Resultado
+Aprobado — API disponible por el túnel que usa `web-dist`.
+
+### Riesgos detectados
+CORS permisivo a `*.ngrok-free.app` solo aplica fuera de `production`. Mantener `NODE_ENV=production` en despliegues reales.
+
+### Rollback
+Revertir `PORT` a 3001 y el callback CORS en `main.ts` si se necesita el comportamiento anterior.
+
+### Próximo paso
+Probar login en la URL pública web y, si ngrok de API rota, recompilar `web-dist` o usar `.\scripts\web-ngrok.ps1 -Mode Share`.
+
+---
+
+## 2026-07-08 — Chat IA: nuevo, archivar y eliminar conversación
+
+### Cambio realizado
+Gestión de conversaciones del asistente IA: campo `status` (`active`/`archived`) en `ai_conversations`, endpoints `PATCH /ai/conversations/:id/status` y `DELETE /ai/conversations/:id`, menú en Flutter (nuevo chat, archivar, eliminar, historial y archivadas).
+
+### Archivos modificados
+- `backend-nest/prisma/schema.prisma`
+- `backend-nest/src/ai-assistant/ai-chat.service.ts`
+- `backend-nest/src/ai-assistant/ai-chat.controller.ts`
+- `frontend-flutter/lib/services/ai_service.dart`
+- `frontend-flutter/lib/features/ai/ai_chat_page.dart`
+- `docs/05-bitacora-migracion.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/07-endpoints-api.md`
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/dto/list-ai-conversations-query.dto.ts`
+- `backend-nest/src/ai-assistant/dto/update-ai-conversation-status.dto.ts`
+
+### Funcionalidad afectada
+Chat IA del socio (Flutter + API).
+
+### Pruebas realizadas
+- `npm run build` backend OK
+- `flutter analyze` archivos IA sin errores
+
+### Resultado
+Pendiente — requiere `npx prisma db push` en backend antes de probar en dispositivo.
+
+### Riesgos detectados
+Migración BD: columna `status` nueva en `ai_conversations` (default `active`).
+
+### Rollback
+Revertir commits; eliminar columna `status` si ya se aplicó `db push`.
+
+### Próximo paso
+Ejecutar `npx prisma db push` y probar menú del chat en app socio.
+
+---
+
 ## 2026-07-07 — Manual integración base de datos
 
 ### Cambio realizado
@@ -2324,3 +2408,69 @@ Quitar `MembershipAlertsModule` y `ScheduleModule`; revertir env y docs.
 
 ### Próximo paso
 Prueba manual; aprobación Fase 17; endurecimiento producción o commits si el usuario lo solicita.
+
+---
+
+## 2026-07-08 — Proveedor Z.AI (GLM-5.2) para asistente IA
+
+### Cambio realizado
+Soporte de **Z.AI / GLM-5.2** como tercer proveedor del asistente IA en NestJS (`AI_PROVIDER=zai`). Misma API REST y WebSocket; Flutter sin cambios. API key solo en servidor (`ZAI_API_KEY`).
+
+### Archivos modificados
+- `backend-nest/src/ai-assistant/ai-model.service.ts`
+- `backend-nest/src/ai-assistant/ai-assistant.module.ts`
+- `backend-nest/src/ai-assistant/ai-chat.service.ts` (comentario)
+- `backend-nest/.env.example`
+- `backend-nest/scripts/audit-phase-11.mjs`
+- `docs/13-comandos-ejecucion.md`
+- `docs/14-estructura-proyecto.md`
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/zai.service.ts`
+
+### Funcionalidad afectada
+Asistente IA (REST + streaming WS): puede usar Gemini, Z.AI (GLM-5.2) u Ollama según `.env`.
+
+### Código reutilizado
+Patrón de `OllamaService` y `GeminiService`; `buildSystemPrompt`, `AiToolsService`, `AiChatService`.
+
+### Duplicados revisados
+Sin duplicar lógica de chat; fachada centralizada en `AiModelService`.
+
+### Optimizaciones realizadas
+`AiModelService` refactorizado con `getActiveProvider()` para evitar ramas repetidas al agregar proveedores.
+
+### Comentarios agregados en el código
+Reglas de seguridad en `ZaiService` (API key solo servidor, thinking deshabilitado para respuestas directas al socio).
+
+### Pruebas realizadas
+- `npm run build` + `npm run lint` en backend-nest → OK
+
+### Resultado
+Pendiente de prueba manual con `ZAI_API_KEY` válida.
+
+### Riesgos detectados
+- Bajo: Z.AI es servicio de pago; controlar límites con `AI_DAILY_MESSAGE_LIMIT`.
+- La API key no debe commitearse ni exponerse en Flutter.
+
+### Rollback
+Quitar `ZaiService`, revertir `AiModelService` y variables `ZAI_*` en `.env.example`.
+
+### Próximo paso
+Configurar `AI_PROVIDER=zai` + `ZAI_API_KEY` y probar chat REST/WS desde Flutter.
+
+---
+
+## 2026-07-08 — Vuelta a Ollama como proveedor IA local
+
+### Cambio realizado
+`AI_PROVIDER=ollama` en `backend-nest/.env` (desarrollo local sin Z.AI ni créditos en nube).
+
+### Archivos modificados
+- `backend-nest/.env`
+
+### Resultado
+Pendiente de reiniciar NestJS y probar chat con Ollama en ejecución.
+
+### Próximo paso
+`ollama serve` + `npm run start:dev` + chat desde Flutter.

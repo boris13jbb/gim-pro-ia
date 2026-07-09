@@ -504,15 +504,22 @@ enum comprobantes_electronicos_estado_sunat {
 
 /// Conversaciones del asistente IA por socio (Fase 11).
 model ai_conversations {
-  id             Int           @id @default(autoincrement())
+  id             Int                     @id @default(autoincrement())
   member_id      Int
-  titulo         String?       @db.VarChar(120)
-  creado_en      DateTime      @default(now()) @db.DateTime(0)
-  actualizado_en DateTime      @updatedAt @db.DateTime(0)
-  socios         socios        @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_conv_socio")
+  titulo         String?                 @db.VarChar(120)
+  status         ai_conversation_status  @default(active)
+  creado_en      DateTime                @default(now()) @db.DateTime(0)
+  actualizado_en DateTime                @updatedAt @db.DateTime(0)
+  socios         socios                  @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_conv_socio")
   ai_messages    ai_messages[]
 
   @@index([member_id], map: "idx_ai_conv_member")
+  @@index([member_id, status], map: "idx_ai_conv_member_status")
+}
+
+enum ai_conversation_status {
+  active
+  archived
 }
 
 model ai_messages {

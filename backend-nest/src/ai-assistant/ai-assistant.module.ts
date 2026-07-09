@@ -9,6 +9,7 @@ import { AiModelService } from './ai-model.service';
 import { AiToolsService } from './ai-tools.service';
 import { GeminiService } from './gemini.service';
 import { OllamaService } from './ollama.service';
+import { ZaiService } from './zai.service';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OllamaService } from './ollama.service';
     AiToolsService,
     GeminiService,
     OllamaService,
+    ZaiService,
     AiModelService,
   ],
   exports: [AiChatService, AiModelService],

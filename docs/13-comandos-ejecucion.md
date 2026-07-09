@@ -387,7 +387,10 @@ Copiar desde `backend-nest/.env.example` y configurar:
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Tokens JWT |
 | `CORS_ORIGINS` | Orígenes Flutter (incluir `:8080` para web) |
 | `GEMINI_API_KEY` | IA Fase 11 con Gemini (solo servidor, producción) |
-| `AI_PROVIDER` | `gemini` (default) o `ollama` (pruebas locales) |
+| `AI_PROVIDER` | `gemini` (default), `zai` (GLM-5.2) u `ollama` (pruebas locales) |
+| `ZAI_API_KEY` | API key de Z.AI (https://z.ai) cuando `AI_PROVIDER=zai` |
+| `ZAI_MODEL` | Modelo Z.AI (default `glm-5.2`) |
+| `ZAI_BASE_URL` | URL base Z.AI (default `https://api.z.ai/api/paas/v4`) |
 | `OLLAMA_BASE_URL` | URL de Ollama (default `http://127.0.0.1:11434`) |
 | `OLLAMA_MODEL` | Modelo local (ej. `llama3.2`) |
 | `SMTP_*` | Envío de comprobantes SRI |
@@ -410,6 +413,20 @@ npm run audit:phase-11
 ```
 
 Flutter **no cambia**: sigue llamando a NestJS (`POST /api/ai/chat` y WebSocket `/ai`).
+
+### Pruebas IA con Z.AI / GLM-5.2 (nube)
+
+```bash
+# 1. Obtener API key en https://z.ai
+# 2. En backend-nest/.env
+AI_PROVIDER=zai
+ZAI_API_KEY=tu_api_key_de_z.ai
+ZAI_MODEL=glm-5.2
+
+# 3. Reiniciar NestJS y probar chat en la app Flutter o:
+cd backend-nest
+npm run audit:phase-11
+```
 
 ---
 

@@ -1082,10 +1082,15 @@ La API key de Gemini **nunca** va en Flutter.
 ## GET /ai/conversations
 
 ### Descripción
-Lista conversaciones del socio autenticado (más recientes primero).
+Lista conversaciones del socio autenticado (más recientes primero). Por defecto solo **activas**; con `status=archived` devuelve archivadas.
 
 ### Rol permitido
 `socio`
+
+### Query
+| Parámetro | Valores | Default |
+|-----------|---------|---------|
+| `status` | `active`, `archived` | `active` |
 
 ### Respuesta exitosa
 ```json
@@ -1095,6 +1100,7 @@ Lista conversaciones del socio autenticado (más recientes primero).
     {
       "id": 1,
       "title": "¿Cómo está mi membresía?",
+      "status": "active",
       "createdAt": "2026-07-03T06:00:00.000Z",
       "updatedAt": "2026-07-03T06:01:00.000Z",
       "lastMessage": {
@@ -1120,6 +1126,48 @@ Detalle de una conversación con todos los mensajes.
 
 ### Rol permitido
 `socio` (solo conversaciones propias)
+
+### Errores
+- `403` — Conversación de otro socio
+- `404` — Conversación no encontrada
+
+---
+
+## PATCH /ai/conversations/:id/status
+
+### Descripción
+Archiva o restaura una conversación del socio.
+
+### Rol permitido
+`socio` (solo conversaciones propias)
+
+### Body
+```json
+{ "status": "archived" }
+```
+Valores: `active`, `archived`.
+
+### Respuesta exitosa
+Devuelve el resumen de la conversación actualizada (`id`, `title`, `status`, `lastMessage`, etc.).
+
+### Errores
+- `403` — Conversación de otro socio
+- `404` — Conversación no encontrada
+
+---
+
+## DELETE /ai/conversations/:id
+
+### Descripción
+Elimina permanentemente una conversación y todos sus mensajes (cascade).
+
+### Rol permitido
+`socio` (solo conversaciones propias)
+
+### Respuesta exitosa
+```json
+{ "ok": true, "data": { "deleted": true, "id": 1 } }
+```
 
 ### Errores
 - `403` — Conversación de otro socio

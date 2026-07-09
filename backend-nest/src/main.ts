@@ -52,18 +52,33 @@ async function bootstrap() {
   );
 
   // CORS controlado por env (string CSV).
-
+  // En development también acepta túneles ngrok: la URL pública cambia
+  // cada vez que reinicias ngrok (plan free) y no conviene editar .env a mano.
   const corsOrigins = (process.env.CORS_ORIGINS ?? '')
-
     .split(',')
-
     .map((s) => s.trim())
-
     .filter(Boolean);
 
-  app.enableCors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true,
+  const isDev = (process.env.NODE_ENV ?? 'development') !== 'production';
+  const isNgrokOrigin = (origin: string) =>
+    /^https:\/\/[a-z0-9-]+\.ngrok(-free)?\.app$/i.test(origin);
 
+  app.enableCors({
+    origin:
+      corsOrigins.length === 0
+        ? true
+        : (origin, callback) => {
+            // Peticiones sin Origin (curl, Postman, app móvil nativa).
+            if (!origin) {
+              callback(null, true);
+              return;
+            }
+            if (corsOrigins.includes(origin) || (isDev && isNgrokOrigin(origin))) {
+              callback(null, true);
+              return;
+            }
+            callback(new Error(`Origen CORS no permitido: ${origin}`), false);
+          },
     credentials: false,
   });
 

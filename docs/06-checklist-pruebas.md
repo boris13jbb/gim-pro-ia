@@ -261,6 +261,7 @@ npm run audit:phase-09
 | 10 | Flutter | Test widget | `flutter test` | 1/1 | 1/1 | OK |
 | 10 | Flutter | Login UI | Pantalla login | navega a home | OK (Chrome) | OK |
 | 10 | Flutter | CORS web :8080 | Login desde Chrome | 201 | corregido CORS | OK |
+| 10 | Flutter | API ngrok (web-dist) | Login vía túnel | 200 health + login | API `:3000` + CORS ngrok | OK |
 | 10 | API | GET asistencias propias | GET `/attendance/me` | 200 + items | OK | OK |
 | 10 | API | POST asistencia propia | POST `/attendance/self` | 201 o 409 | 201 | OK |
 | 10 | Flutter | Inicio resumen asistencias | Tab Inicio | visitas del mes | slice 2 | OK |
@@ -371,6 +372,18 @@ npm run audit:phase-11
 | 11 | Seguridad | Conectar sin token / token inválido | handshake `/ai` | `ai.error` + desconexión | Pendiente manual | Pendiente |
 | 11 | Seguridad | Socio no ve chats de otro | sala `member:{id}` | aislado por socio | Por diseño | OK (por diseño) |
 | 11 | Resiliencia | Backend sin socket disponible | — | cae a REST `POST /ai/chat` | Fallback implementado | OK (por diseño) |
+
+## Fase 11 (Slice 2b) — Gestión de conversaciones IA
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 11 | Asistente | Menú → Nuevo chat | — | pantalla vacía, sin `conversationId` | Implementado | Pendiente manual |
+| 11 | Asistente | Menú → Archivar chat | PATCH `/ai/conversations/:id/status` | conversación pasa a `archived` | Implementado | Pendiente manual |
+| 11 | Asistente | Menú → Eliminar chat | DELETE `/ai/conversations/:id` | conversación y mensajes borrados | Implementado | Pendiente manual |
+| 11 | Asistente | Menú → Mis conversaciones | GET `/ai/conversations?status=active` | lista y abre chat seleccionado | Implementado | Pendiente manual |
+| 11 | Asistente | Menú → Ver archivadas | GET `/ai/conversations?status=archived` | lista archivadas + restaurar | Implementado | Pendiente manual |
+| 11 | API | Mensaje en chat archivado | POST `/ai/chat` | 400 — debe restaurar primero | Por diseño | Pendiente manual |
+| 11 | Backend | `npm run build` | — | compila sin errores | Build OK | OK |
 
 ## Fase 11 (Slice 3) — WebSockets: notificaciones en tiempo real
 

@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ai_message_role, Prisma } from '@prisma/client';
+import { ai_conversation_status, ai_message_role, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { AiToolsService } from './ai-tools.service';
 import { AiModelService } from './ai-model.service';
@@ -26,9 +27,12 @@ export class AiChatService {
     private readonly aiModel: AiModelService,
   ) {}
 
-  async listConversations(memberId: number) {
+  async listConversations(
+    memberId: number,
+    status: ai_conversation_status = ai_conversation_status.active,
+  ) {
     const items = await this.prisma.ai_conversations.findMany({
-      where: { member_id: memberId },
+      where: { member_id: memberId, status },
       orderBy: { actualizado_en: 'desc' },
       include: {
         ai_messages: {
@@ -38,20 +42,44 @@ export class AiChatService {
       },
     });
 
-    return items.map((conv) => ({
-      id: conv.id,
-      title: conv.titulo,
-      createdAt: conv.creado_en,
-      updatedAt: conv.actualizado_en,
-      lastMessage: conv.ai_messages[0]
-        ? {
-            id: conv.ai_messages[0].id,
-            role: conv.ai_messages[0].role,
-            content: conv.ai_messages[0].content,
-            createdAt: conv.ai_messages[0].creado_en,
-          }
-        : null,
-    }));
+    return items.map((conv) => this.mapConversationSummary(conv));
+  }
+
+  async updateConversationStatus(
+    memberId: number,
+    conversationId: number,
+    status: ai_conversation_status,
+  ) {
+    const conversation = await this.findOwnedConversation(
+      memberId,
+      conversationId,
+    );
+
+    const updated = await this.prisma.ai_conversations.update({
+      where: { id: conversation.id },
+      data: { status },
+      include: {
+        ai_messages: {
+          orderBy: { creado_en: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return this.mapConversationSummary(updated);
+  }
+
+  async deleteConversation(memberId: number, conversationId: number) {
+    const conversation = await this.findOwnedConversation(
+      memberId,
+      conversationId,
+    );
+
+    await this.prisma.ai_conversations.delete({
+      where: { id: conversation.id },
+    });
+
+    return { deleted: true, id: conversationId };
   }
 
   async getConversation(memberId: number, conversationId: number) {
@@ -68,6 +96,7 @@ export class AiChatService {
     return {
       id: conversation.id,
       title: conversation.titulo,
+      status: conversation.status,
       createdAt: conversation.creado_en,
       updatedAt: conversation.actualizado_en,
       messages: messages.map((msg) => this.mapMessage(msg)),
@@ -136,13 +165,13 @@ export class AiChatService {
   /**
    * Prepara un turno de conversación: valida límite diario, resuelve/crea la
    * conversación (solo del socio), guarda el mensaje del usuario y arma el
-   * contexto real + historial para el proveedor de IA activo (Gemini u Ollama).
+   * contexto real + historial para el proveedor de IA activo (Gemini, Z.AI u Ollama).
    */
   private async prepareTurn(memberId: number, dto: SendAiChatDto) {
     await this.ensureDailyLimit(memberId);
 
     const conversation = dto.conversationId
-      ? await this.findOwnedConversation(memberId, dto.conversationId)
+      ? await this.findOwnedConversation(memberId, dto.conversationId, true)
       : await this.prisma.ai_conversations.create({
           data: {
             member_id: memberId,
@@ -239,6 +268,7 @@ export class AiChatService {
   private async findOwnedConversation(
     memberId: number,
     conversationId: number,
+    requireActive = false,
   ) {
     const conversation = await this.prisma.ai_conversations.findUnique({
       where: { id: conversationId },
@@ -251,6 +281,15 @@ export class AiChatService {
     if (conversation.member_id !== memberId) {
       throw new ForbiddenException(
         'No puedes acceder a conversaciones de otro socio',
+      );
+    }
+
+    if (
+      requireActive &&
+      conversation.status === ai_conversation_status.archived
+    ) {
+      throw new BadRequestException(
+        'Esta conversación está archivada. Restáurala antes de continuar.',
       );
     }
 
@@ -281,6 +320,36 @@ export class AiChatService {
     const trimmed = message.trim().replace(/\s+/g, ' ');
     if (trimmed.length <= 60) return trimmed;
     return `${trimmed.slice(0, 57)}...`;
+  }
+
+  private mapConversationSummary(conv: {
+    id: number;
+    titulo: string | null;
+    status: ai_conversation_status;
+    creado_en: Date;
+    actualizado_en: Date;
+    ai_messages: Array<{
+      id: number;
+      role: ai_message_role;
+      content: string;
+      creado_en: Date;
+    }>;
+  }) {
+    return {
+      id: conv.id,
+      title: conv.titulo,
+      status: conv.status,
+      createdAt: conv.creado_en,
+      updatedAt: conv.actualizado_en,
+      lastMessage: conv.ai_messages[0]
+        ? {
+            id: conv.ai_messages[0].id,
+            role: conv.ai_messages[0].role,
+            content: conv.ai_messages[0].content,
+            createdAt: conv.ai_messages[0].creado_en,
+          }
+        : null,
+    };
   }
 
   private mapMessage(message: {

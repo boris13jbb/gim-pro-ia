@@ -6,9 +6,6 @@ import mariadb from 'mariadb';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const base = process.env.API_BASE ?? 'http://localhost:3000/api';
-const testDni = `AIA${Date.now()}`.slice(0, 20);
-
 function loadEnvFile() {
   try {
     const content = readFileSync(resolve(process.cwd(), '.env'), 'utf8');
@@ -25,7 +22,8 @@ function loadEnvFile() {
       ) {
         value = value.slice(1, -1);
       }
-      if (!process.env[key]) process.env[key] = value;
+      // Último valor en .env gana (evita duplicados como AI_PROVIDER repetido).
+      process.env[key] = value;
     }
   } catch {
     // .env opcional
@@ -33,6 +31,11 @@ function loadEnvFile() {
 }
 
 loadEnvFile();
+
+const port = process.env.PORT ?? '3000';
+// 127.0.0.1 evita que localhost resuelva a ::1 y golpee otra app (p. ej. Next.js).
+const base = process.env.API_BASE ?? `http://127.0.0.1:${port}/api`;
+const testDni = `AIA${Date.now()}`.slice(0, 20);
 
 async function req(path, options = {}) {
   const { headers: extraHeaders, ...rest } = options;
@@ -61,14 +64,45 @@ function fail(name, detail) {
   return { name, ok: false, detail };
 }
 
+async function ensureApiReachable() {
+  const health = await req('/health');
+  if (health.status === 200 && health.body?.data?.status === 'ok') {
+    return true;
+  }
+
+  console.error(
+    `\nERROR: La API del gimnasio no responde en ${base}/health (HTTP ${health.status}).`,
+  );
+  console.error(
+    'Causa habitual: NestJS no está en ejecución, o `localhost` resuelve a otra app (p. ej. Next.js en ::1).',
+  );
+  console.error('\nSolución:');
+  console.error('  1. Inicia NestJS: npm run start:dev');
+  console.error('  2. Usa 127.0.0.1 (ya es el default del script) o libera el puerto en .env');
+  console.error(
+    '  3. Si usas otro puerto: $env:API_BASE="http://127.0.0.1:3001/api"; npm run audit:phase-11',
+  );
+  return false;
+}
+
 async function main() {
   const results = [];
+  if (!(await ensureApiReachable())) {
+    process.exit(1);
+  }
+  const aiProviderRaw = process.env.AI_PROVIDER?.trim().toLowerCase();
   const aiProvider =
-    process.env.AI_PROVIDER?.trim().toLowerCase() === 'ollama'
+    aiProviderRaw === 'ollama'
       ? 'ollama'
-      : 'gemini';
+      : aiProviderRaw === 'zai'
+        ? 'zai'
+        : 'gemini';
   const aiConfigured =
-    aiProvider === 'ollama' || Boolean(process.env.GEMINI_API_KEY?.trim());
+    aiProvider === 'ollama'
+      ? true
+      : aiProvider === 'zai'
+        ? Boolean(process.env.ZAI_API_KEY?.trim())
+        : Boolean(process.env.GEMINI_API_KEY?.trim());
 
   const loginAdmin = await req('/auth/login', {
     method: 'POST',
@@ -153,12 +187,17 @@ async function main() {
 
   if (aiConfigured) {
     const chatMessage = chat.body?.error?.message ?? '';
-    const providerLabel = aiProvider === 'ollama' ? 'Ollama' : 'Gemini';
+    const providerLabel =
+      aiProvider === 'ollama'
+        ? 'Ollama'
+        : aiProvider === 'zai'
+          ? 'Z.AI'
+          : 'Gemini';
     results.push(
       chat.status === 200 && chat.body?.data?.reply
         ? ok(`POST /ai/chat con ${providerLabel}`, chat.body.data.conversationId)
         : chat.status === 429
-          ? ok(`POST /ai/chat créditos ${providerLabel} agotados (429)`, chatMessage.slice(0, 80))
+          ? ok(`POST /ai/chat créditos ${providerLabel} agotados (429)`, chatMessage.slice(0, 120))
           : fail(`POST /ai/chat con ${providerLabel}`, `${chat.status} ${chatMessage}`),
     );
 
@@ -187,11 +226,15 @@ async function main() {
   console.log(`\nResultado: ${passed}/${results.length} OK`);
   if (!aiConfigured) {
     console.log(
-      'Nota: define GEMINI_API_KEY o AI_PROVIDER=ollama en .env para probar respuesta real.',
+      'Nota: define GEMINI_API_KEY, ZAI_API_KEY (AI_PROVIDER=zai) o AI_PROVIDER=ollama en .env para probar respuesta real.',
     );
   } else if (aiProvider === 'ollama') {
     console.log(
       'Nota: requiere Ollama en ejecución (`ollama serve`) y modelo descargado (`ollama pull llama3.2`).',
+    );
+  } else if (aiProvider === 'zai') {
+    console.log(
+      'Nota: requiere ZAI_API_KEY válida y saldo/créditos en https://z.ai',
     );
   }
   if (passed !== results.length) process.exit(1);

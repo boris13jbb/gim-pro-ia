@@ -36,7 +36,7 @@ gim_pro_ia/
 ```text
 Flutter App  ──HTTP/JWT──►  NestJS API  ──Prisma──►  MySQL (ec_gym_system)
                 │                │
-                └── WebSocket ───┘──► Gemini / Ollama (solo backend)
+                └── WebSocket ───┘──► Gemini / Z.AI / Ollama (solo backend)
 ```
 
 ### Principios
@@ -98,7 +98,7 @@ src/
 ├── sales/                      # Ventas POS y tickets
 ├── reports/                    # Reportes financieros y exportación
 ├── billing-sri/                # Facturación electrónica Ecuador (SRI)
-├── ai-assistant/               # Chat IA (Gemini / Ollama + herramientas)
+├── ai-assistant/               # Chat IA (Gemini / Z.AI / Ollama + herramientas)
 ├── notifications/              # Notificaciones persistentes en BD
 ├── membership-alerts/          # Alertas automáticas de membresía (cron)
 ├── websocket/                  # Gateways WebSocket (chat IA + tiempo real)
