@@ -2,6 +2,56 @@
 
 ---
 
+## 2026-03-30 — Fase SaaS 1: Auditoría + diseño multi-tenant
+
+### Cambio realizado
+Auditoría completa del estado as-is (NestJS, Prisma/MySQL, Flutter, IA, voz, WebSocket, storage, infra) y diseño documentado de la plataforma SaaS multi-tenant. Sin cambios de código productivo, sin DDL, sin Stripe, sin merge a master.
+
+### Archivos creados
+- `docs/SAAS-ARCHITECTURE.md`
+- `docs/SAAS-MULTI-TENANT-MIGRATION.md`
+- `docs/SAAS-SECURITY-MODEL.md`
+- `docs/SAAS-ROLES-MATRIX.md`
+- `docs/SAAS-BILLING-ROADMAP.md`
+- `docs/SAAS-AI-USAGE.md`
+- `docs/SAAS-DATABASE-MAPPING.md`
+
+### Archivos modificados
+- `docs/05-bitacora-migracion.md`
+
+### Funcionalidad afectada
+Ninguna en runtime. Solo documentación de diseño.
+
+### Código reutilizado
+N/A (auditoría de módulos existentes: `auth/`, `members/`, `ai-assistant/`, `websocket/`, etc.).
+
+### Duplicados revisados
+No se crearon docs paralelos tipo `bitacora-saas.md`; se usó la bitácora oficial y documentos `SAAS-*.md` pedidos para esta fase.
+
+### Hallazgos clave
+- No existe entidad tenant/gimnasio en BD ni JWT.
+- Roles actuales: `admin`, `recepcionista`, `entrenador`, `socio`.
+- Aislamiento actual es por socio (memberId), no por organización.
+- Riesgo crítico si se abriera multi-tenant sin scoping en services `findMany`/`findUnique`.
+
+### Pruebas realizadas
+- Revisión estática de `schema.prisma`, `app.module.ts`, auth, AI, WS, Flutter auth.
+- No se ejecutaron migraciones ni cambios de código.
+
+### Resultado
+Pendiente de revisión humana (Fase 1 LISTA PARA REVISIÓN). No avanzar a Fase 2 sin aprobación.
+
+### Riesgos detectados
+Documentados en `SAAS-SECURITY-MODEL.md` y `SAAS-DATABASE-MAPPING.md` (IDOR staff, SRI singleton, uploads estáticos, reportes globales).
+
+### Rollback
+Eliminar docs `SAAS-*.md` y revertir commit de documentación; no hay cambio de BD/código.
+
+### Próximo paso
+Esperar aprobación. Luego Fase 2 controlada: schema aditivo + tenant seed + JWT `tenantId` + scoping P0.
+
+---
+
 ## 2026-07-08 — IA: adaptación src/ia → WebSocket (intención del socio)
 
 ### Cambio realizado
