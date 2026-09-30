@@ -68,13 +68,21 @@ export class AiVoiceService {
       conversationId,
     });
 
+    // Regla de resiliencia:
+    // Si el chat ya respondió, un fallo de Piper no debe tumbar el turno.
+    // Flutter puede mostrar el texto y usar TTS local como respaldo.
     let audioBase64: string | null = null;
     let audioMimeType: string | null = null;
 
     if (await this.piper.isReady()) {
-      const wav = await this.piper.synthesize(chat.reply);
-      audioBase64 = wav.toString('base64');
-      audioMimeType = 'audio/wav';
+      try {
+        const wav = await this.piper.synthesize(chat.reply);
+        audioBase64 = wav.toString('base64');
+        audioMimeType = 'audio/wav';
+      } catch {
+        audioBase64 = null;
+        audioMimeType = null;
+      }
     }
 
     return {

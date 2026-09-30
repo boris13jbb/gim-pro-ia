@@ -68,6 +68,8 @@ export class PiperTtsService {
       args.push('--config', this.configPath);
     }
 
+    const timeoutMs = Number(process.env.VOICE_TTS_TIMEOUT_MS ?? 60_000);
+
     return new Promise((resolve, reject) => {
       const proc = spawn(this.executable, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -75,17 +77,39 @@ export class PiperTtsService {
       });
 
       let stderr = '';
+      let settled = false;
+
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      };
+
+      const timer = setTimeout(() => {
+        proc.kill();
+        finish(
+          new Error(
+            `Piper superó el timeout de ${timeoutMs}ms (VOICE_TTS_TIMEOUT_MS).`,
+          ),
+        );
+      }, timeoutMs);
+
       proc.stderr.on('data', (chunk: Buffer) => {
         stderr += chunk.toString();
       });
 
-      proc.on('error', (err) => reject(err));
+      proc.on('error', (err) => finish(err));
       proc.on('close', (code) => {
         if (code === 0) {
-          resolve();
+          finish();
           return;
         }
-        reject(
+        finish(
           new Error(
             stderr.trim() || `Piper salió con código ${code ?? 'desconocido'}`,
           ),

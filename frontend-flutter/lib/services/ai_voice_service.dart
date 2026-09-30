@@ -44,10 +44,17 @@ class AiVoiceService {
     if (!kIsWeb && aiService != null) {
       try {
         final status = await aiService.getVoiceStatus();
-        _serverPipeline = status.enabled;
+        // Solo usar pipeline servidor si STT está listo; si no, fallback local.
+        _serverPipeline = status.enabled && status.sttReady;
         if (_serverPipeline) {
           final mic = await Permission.microphone.request();
-          return mic.isGranted;
+          if (!mic.isGranted) return false;
+          // TTS local de respaldo cuando Piper no entregue audio.
+          try {
+            await _tts.setLanguage('es-ES');
+            await _tts.setSpeechRate(0.48);
+          } catch (_) {}
+          return true;
         }
       } catch (_) {
         _serverPipeline = false;
