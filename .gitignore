@@ -16,8 +16,11 @@ vendor/
 
 # Build y artefactos
 dist/
+web-dist/
 build/
 /generated/
+*.apk
+apk-dist/
 
 # Uploads y archivos en runtime
 uploads/
@@ -30,11 +33,15 @@ backend-nest/uploads/
 
 # IDE y sistema
 .idea/
+.cursor/hooks/
 *.swp
 *.swo
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Config local de máquina (IP LAN / defines físicos)
+frontend-flutter/dart_defines.physical_device.json
 
 # Prisma
 backend-nest/generated/

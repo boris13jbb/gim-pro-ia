@@ -90,6 +90,57 @@ export class GeminiService {
    * Crea la sesión de chat con la instrucción de sistema y el contexto real del
    * socio. Reutilizado por la respuesta REST (completa) y por el streaming (WS).
    */
+  /**
+   * Clasifica la intención del mensaje del socio (JSON). Usado antes del streaming WS.
+   */
+  async analyzeMemberIntent(
+    message: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  ): Promise<{ intent: string; topic?: string }> {
+    if (!this.isConfigured()) {
+      return { intent: 'OTHER' };
+    }
+
+    const historyBlock =
+      history.length > 0
+        ? `\nHistorial reciente:\n${history
+            .slice(-6)
+            .map((h) => `${h.role}: ${h.content}`)
+            .join('\n')}`
+        : '';
+
+    const prompt = `Analiza el último mensaje de un socio del gimnasio Iron Gym.
+Devuelve SOLO JSON válido:
+{
+  "intent": "GREETING" | "MEMBERSHIP" | "ATTENDANCE" | "WORKOUT" | "BODY_PROGRESS" | "GENERAL_FITNESS" | "APP_HELP" | "OTHER",
+  "topic": "tema breve en español o null"
+}
+${historyBlock}
+
+Último mensaje del socio: ${message}`;
+
+    const genAI = new GoogleGenerativeAI(this.apiKey);
+    const model = genAI.getGenerativeModel({
+      model: this.modelName,
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      },
+    });
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text()?.trim() || '{}';
+    const parsed = JSON.parse(text) as {
+      intent?: string;
+      topic?: string | null;
+    };
+
+    return {
+      intent: parsed.intent ?? 'OTHER',
+      topic: parsed.topic ?? undefined,
+    };
+  }
+
   private createChatSession(params: {
     memberContext: string;
     history: AiHistoryMessage[];

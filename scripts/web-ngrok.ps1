@@ -34,7 +34,7 @@ param(
     [ValidateSet('Run', 'Share')]
     [string] $Mode = 'Run',
     [string] $ApiUrl,
-    [int] $WebPort = 8088,
+    [int] $WebPort = 8888,
     [switch] $SkipHealthCheck
 )
 

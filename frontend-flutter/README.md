@@ -27,8 +27,17 @@ Por defecto:
 **Dispositivo físico Android:** `10.0.2.2` no funciona. Usa la IP de tu PC en la misma red Wi‑Fi:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.100:3000/api
+# Opción rápida (IP en dart_defines.physical_device.json)
+flutter run --dart-define-from-file=dart_defines.physical_device.json
+
+# O desde la raíz del repo:
+..\scripts\run-android-physical.ps1
+
+# Manual:
+flutter run --dart-define=API_HOST=192.168.x.x
 ```
+
+Verifica tu IP con `ipconfig` (IPv4 de Wi‑Fi). Teléfono y PC deben estar en la **misma red**.
 
 ## Ejecutar
 

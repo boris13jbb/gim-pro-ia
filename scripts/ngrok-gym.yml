@@ -14,5 +14,7 @@ tunnels:
     addr: 3000
     proto: http
   web:
-    addr: 8088
+    addr: 8888
     proto: http
+    # Puerto 8888: 8080/8088/8089 están reservados por Hyper-V en Windows.
+    host_header: "localhost:8888"

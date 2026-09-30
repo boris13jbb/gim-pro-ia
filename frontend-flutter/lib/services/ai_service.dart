@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import 'api_client.dart';
 
 int _requireInt(dynamic value, String field) {
@@ -107,6 +109,57 @@ class AiChatResult {
   }
 }
 
+class AiVoiceStatus {
+  AiVoiceStatus({
+    required this.enabled,
+    required this.provider,
+    required this.sttReady,
+    required this.ttsReady,
+  });
+
+  final bool enabled;
+  final String provider;
+  final bool sttReady;
+  final bool ttsReady;
+
+  factory AiVoiceStatus.fromJson(Map<String, dynamic> json) {
+    final stt = json['stt'] as Map? ?? {};
+    final tts = json['tts'] as Map? ?? {};
+    return AiVoiceStatus(
+      enabled: json['enabled'] == true,
+      provider: json['provider']?.toString() ?? 'ollama',
+      sttReady: stt['ready'] == true,
+      ttsReady: tts['ready'] == true,
+    );
+  }
+}
+
+class AiVoiceTurnResult {
+  AiVoiceTurnResult({
+    required this.conversationId,
+    required this.transcript,
+    required this.reply,
+    this.audioBase64,
+    this.audioMimeType,
+  });
+
+  final int conversationId;
+  final String transcript;
+  final String reply;
+  final String? audioBase64;
+  final String? audioMimeType;
+
+  factory AiVoiceTurnResult.fromJson(Map<String, dynamic> json) {
+    return AiVoiceTurnResult(
+      conversationId: _requireInt(json['conversationId'], 'conversationId'),
+      transcript: json['transcript']?.toString() ?? '',
+      reply: json['reply']?.toString() ?? '',
+      audioBase64: json['audioBase64'] as String?,
+      audioMimeType: json['audioMimeType'] as String?,
+    );
+  }
+}
+
 class AiService {
   AiService({required ApiClient apiClient}) : _apiClient = apiClient;
 
@@ -174,6 +227,33 @@ class AiService {
       '/ai/conversations/$id/status',
       body: {'status': status},
       parser: (_) => null,
+    );
+  }
+
+  Future<AiVoiceStatus> getVoiceStatus() {
+    return _apiClient.getData(
+      '/ai/voice/status',
+      parser: (raw) =>
+          AiVoiceStatus.fromJson(Map<String, dynamic>.from(raw as Map)),
+    );
+  }
+
+  Future<AiVoiceTurnResult> sendVoiceTurn({
+    required String filePath,
+    int? conversationId,
+  }) {
+    final form = FormData.fromMap({
+      'audio': MultipartFile.fromFileSync(filePath, filename: 'voice.wav'),
+      if (conversationId != null) 'conversationId': conversationId,
+    });
+
+    return _apiClient.postMultipart(
+      '/ai/voice/turn',
+      formData: form,
+      receiveTimeout: const Duration(seconds: 180),
+      sendTimeout: const Duration(seconds: 60),
+      parser: (raw) =>
+          AiVoiceTurnResult.fromJson(Map<String, dynamic>.from(raw as Map)),
     );
   }
 }

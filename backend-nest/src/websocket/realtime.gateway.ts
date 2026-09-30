@@ -8,12 +8,7 @@ import type { Namespace, Socket } from 'socket.io';
 import { WsAuthService } from './ws-auth.service';
 import { extractHandshakeToken, setSocketMemberId } from './ws-token.util';
 
-// CORS del socket. Solo relevante para Flutter Web; la app móvil no envía
-// cabecera Origin. Se controla con la misma variable CORS_ORIGINS que la API REST.
-const wsCorsOrigins = (process.env.CORS_ORIGINS ?? '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+import { getWebSocketCorsConfig } from '../config/cors.config';
 
 /**
  * Gateway de notificaciones en tiempo real para el socio (namespace `/events`).
@@ -30,7 +25,7 @@ const wsCorsOrigins = (process.env.CORS_ORIGINS ?? '')
  */
 @WebSocketGateway({
   namespace: '/events',
-  cors: { origin: wsCorsOrigins.length > 0 ? wsCorsOrigins : true },
+  cors: getWebSocketCorsConfig(),
 })
 export class RealtimeGateway implements OnGatewayConnection {
   private readonly logger = new Logger(RealtimeGateway.name);

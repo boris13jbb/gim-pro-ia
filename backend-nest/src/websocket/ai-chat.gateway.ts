@@ -14,12 +14,7 @@ import {
   setSocketMemberId,
 } from './ws-token.util';
 
-// CORS del socket. Solo es relevante para Flutter Web; la app móvil no envía
-// cabecera Origin. Se controla con la misma variable CORS_ORIGINS que la API REST.
-const wsCorsOrigins = (process.env.CORS_ORIGINS ?? '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+import { getWebSocketCorsConfig } from '../config/cors.config';
 
 /**
  * Gateway del asistente IA en tiempo real (namespace `/ai`).
@@ -33,13 +28,14 @@ const wsCorsOrigins = (process.env.CORS_ORIGINS ?? '')
  *
  * Eventos:
  * - Entrante: `ai.message` `{ message, conversationId? }`
- * - Salientes: `ai.response.chunk` `{ delta }`,
- *              `ai.response.done` `{ conversationId, message }`,
+ * - Salientes: `ai.intent` `{ intent, topic? }` (opcional, antes del streaming),
+ *              `ai.response.chunk` `{ delta }`,
+ *              `ai.response.done` `{ conversationId, message, intent? }`,
  *              `ai.error` `{ message }`
  */
 @WebSocketGateway({
   namespace: '/ai',
-  cors: { origin: wsCorsOrigins.length > 0 ? wsCorsOrigins : true },
+  cors: getWebSocketCorsConfig(),
 })
 export class AiChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(AiChatGateway.name);
@@ -85,17 +81,17 @@ export class AiChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      // Reutiliza toda la lógica REST (límite diario, propiedad, persistencia),
-      // pero entrega la respuesta por fragmentos vía `ai.response.chunk`.
       const result = await this.aiChatService.streamMessage(
         memberId,
         parsed,
         (delta) => client.emit('ai.response.chunk', { delta }),
+        (intent) => client.emit('ai.intent', intent),
       );
 
       client.emit('ai.response.done', {
         conversationId: result.conversationId,
         message: result.message,
+        intent: result.intent,
       });
     } catch (error) {
       const message =

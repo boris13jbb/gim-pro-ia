@@ -90,6 +90,27 @@ class ApiClient {
     return _request(() => _dio.post(path, data: body), parser: parser);
   }
 
+  Future<T> postMultipart<T>(
+    String path, {
+    required FormData formData,
+    required T Function(dynamic raw) parser,
+    Duration? receiveTimeout,
+    Duration? sendTimeout,
+  }) async {
+    return _request(
+      () => _dio.post(
+        path,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+        ),
+      ),
+      parser: parser,
+    );
+  }
+
   Future<T> patchData<T>(
     String path, {
     Object? body,
@@ -207,7 +228,7 @@ class ApiClient {
         return 'No se pudo conectar con $base.\n\n'
             'En teléfono físico, 127.0.0.1 es el propio móvil, no tu PC.\n'
             'Usa la IP de tu PC en la misma red WiFi, por ejemplo:\n'
-            'flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3001/api\n\n'
+            'flutter run --dart-define=API_HOST=192.168.x.x\n\n'
             'Luego reinstala la app o genera un APK con esa URL.';
       }
       if (!kIsWeb &&
@@ -216,7 +237,7 @@ class ApiClient {
         return 'No se pudo conectar. La URL 10.0.2.2 solo funciona en '
             'emulador Android, no en teléfono físico.\n\n'
             'Ejecuta la app con la IP de tu PC (misma red WiFi):\n'
-            'flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3001/api';
+            'flutter run --dart-define=API_HOST=192.168.x.x';
       }
       if (kIsWeb) {
         return 'No se pudo conectar con la API ($base). '
@@ -225,7 +246,7 @@ class ApiClient {
       }
       return 'No se pudo conectar con $base. '
           'Verifique que el backend esté activo (npm run start:dev). '
-          'En dispositivo físico use: flutter run --dart-define=API_BASE_URL=http://IP_PC:3001/api';
+          'En dispositivo físico use: flutter run --dart-define=API_HOST=IP_PC';
     }
     return error.message ?? 'Error de red';
   }

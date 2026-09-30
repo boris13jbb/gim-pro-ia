@@ -6,11 +6,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ai_conversation_status, ai_message_role, Prisma } from '@prisma/client';
+import {
+  ai_conversation_status,
+  ai_message_role,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { AiToolsService } from './ai-tools.service';
 import { AiModelService } from './ai-model.service';
+import { AiIntentService } from './ai-intent.service';
 import { SendAiChatDto } from './dto/send-ai-chat.dto';
+import type { AiIntentResult } from './types/ai-intent.types';
 
 @Injectable()
 export class AiChatService {
@@ -25,6 +31,7 @@ export class AiChatService {
     private readonly prisma: PrismaService,
     private readonly aiTools: AiToolsService,
     private readonly aiModel: AiModelService,
+    private readonly aiIntent: AiIntentService,
   ) {}
 
   async listConversations(
@@ -137,8 +144,14 @@ export class AiChatService {
     memberId: number,
     dto: SendAiChatDto,
     onChunk: (delta: string) => void,
+    onIntent?: (intent: AiIntentResult) => void,
   ) {
-    const turn = await this.prepareTurn(memberId, dto);
+    const intentContext = await this.resolveIntent(memberId, dto);
+    if (onIntent) {
+      onIntent(intentContext);
+    }
+
+    const turn = await this.prepareTurn(memberId, dto, intentContext);
 
     try {
       const reply = await this.aiModel.generateReplyStream(
@@ -148,11 +161,13 @@ export class AiChatService {
       const assistantMessage = await this.persistAssistantReply(
         turn.conversation.id,
         reply,
+        intentContext,
       );
 
       return {
         conversationId: turn.conversation.id,
         message: this.mapMessage(assistantMessage),
+        intent: intentContext,
       };
     } catch (error) {
       await this.prisma.ai_messages.delete({
@@ -163,11 +178,58 @@ export class AiChatService {
   }
 
   /**
+   * Analiza intención con historial previo de la conversación (si existe).
+   * Patrón adaptado de src/ia para enriquecer respuestas vía WebSocket.
+   */
+  private async resolveIntent(
+    memberId: number,
+    dto: SendAiChatDto,
+  ): Promise<AiIntentResult> {
+    if (!this.aiIntent.isEnabled()) {
+      return { intent: 'OTHER' };
+    }
+
+    let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+    if (dto.conversationId) {
+      try {
+        const conversation = await this.findOwnedConversation(
+          memberId,
+          dto.conversationId,
+          true,
+        );
+        const priorMessages = await this.prisma.ai_messages.findMany({
+          where: { conversation_id: conversation.id },
+          orderBy: { creado_en: 'asc' },
+          take: this.maxHistoryMessages,
+        });
+        history = priorMessages
+          .filter((msg) => msg.role !== ai_message_role.system)
+          .map((msg) => ({
+            role:
+              msg.role === ai_message_role.user
+                ? ('user' as const)
+                : ('assistant' as const),
+            content: msg.content,
+          }));
+      } catch {
+        history = [];
+      }
+    }
+
+    return this.aiIntent.analyzeIntent(dto.message.trim(), history);
+  }
+
+  /**
    * Prepara un turno de conversación: valida límite diario, resuelve/crea la
    * conversación (solo del socio), guarda el mensaje del usuario y arma el
    * contexto real + historial para el proveedor de IA activo (Gemini, Z.AI u Ollama).
    */
-  private async prepareTurn(memberId: number, dto: SendAiChatDto) {
+  private async prepareTurn(
+    memberId: number,
+    dto: SendAiChatDto,
+    intent?: AiIntentResult,
+  ) {
     await this.ensureDailyLimit(memberId);
 
     const conversation = dto.conversationId
@@ -194,6 +256,10 @@ export class AiChatService {
     });
 
     const memberContext = await this.aiTools.buildMemberContext(memberId);
+    const intentHint =
+      intent && this.aiIntent.isEnabled()
+        ? `\n\n## Guía de intención\n${this.aiIntent.buildIntentHint(intent)}`
+        : '';
     const { history, message } = this.buildModelInput(
       priorMessages,
       dto.message.trim(),
@@ -202,7 +268,11 @@ export class AiChatService {
     return {
       conversation,
       userMessage,
-      modelInput: { memberContext, history, message },
+      modelInput: {
+        memberContext: `${memberContext}${intentHint}`,
+        history,
+        message,
+      },
     };
   }
 
@@ -210,7 +280,11 @@ export class AiChatService {
    * Persiste la respuesta del asistente y actualiza la marca de tiempo de la
    * conversación. Compartido por REST y streaming.
    */
-  private async persistAssistantReply(conversationId: number, reply: string) {
+  private async persistAssistantReply(
+    conversationId: number,
+    reply: string,
+    intent?: AiIntentResult,
+  ) {
     const assistantMessage = await this.prisma.ai_messages.create({
       data: {
         conversation_id: conversationId,
@@ -219,6 +293,8 @@ export class AiChatService {
         metadata: {
           provider: this.aiModel.getProvider(),
           model: this.aiModel.getActiveModelName(),
+          intent: intent?.intent,
+          intentTopic: intent?.topic,
           toolsUsed: [
             'getMemberProfile',
             'getMembershipStatus',

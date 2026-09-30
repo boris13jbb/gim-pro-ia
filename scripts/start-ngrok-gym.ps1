@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Inicia túneles ngrok para Iron Gym (API :3000 + Web :8088).
+    Inicia túneles ngrok para Iron Gym (API :3000 + Web :8888).
 
 .DESCRIPTION
     Combina tu ngrok.yml global (authtoken) con scripts/ngrok-gym.yml (túneles).
@@ -50,7 +50,7 @@ Write-Host "Túneles: $ProjectConfig"
 Write-Host ''
 Write-Host 'Túneles:'
 Write-Host '  api -> localhost:3000 (NestJS)'
-Write-Host '  web -> localhost:8088 (Flutter Web)'
+Write-Host '  web -> localhost:8888 (Flutter Web)'
 Write-Host ''
 Write-Host 'Panel: http://127.0.0.1:4040' -ForegroundColor Cyan
 Write-Host 'Ctrl+C para detener.' -ForegroundColor Yellow

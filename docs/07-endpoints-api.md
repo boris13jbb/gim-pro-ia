@@ -1234,8 +1234,9 @@ Aislamiento: cada socket entra a la sala `member:{memberId}`; no recibe datos de
 | Dirección | Evento | Payload |
 |-----------|--------|---------|
 | Cliente → Servidor | `ai.message` | `{ "message": string (1..4000), "conversationId"?: number }` |
+| Servidor → Cliente | `ai.intent` | `{ "intent": string, "topic"?: string }` (antes del streaming, si `AI_INTENT_ENABLED=true`) |
 | Servidor → Cliente | `ai.response.chunk` | `{ "delta": string }` (fragmento de texto) |
-| Servidor → Cliente | `ai.response.done` | `{ "conversationId": number, "message": { id, role, content, metadata, createdAt } }` |
+| Servidor → Cliente | `ai.response.done` | `{ "conversationId": number, "message": { ... }, "intent"?: { intent, topic? } }` |
 | Servidor → Cliente | `ai.error` | `{ "message": string }` |
 
 ### Reglas de negocio (compartidas con REST)
@@ -1247,6 +1248,7 @@ Aislamiento: cada socket entra a la sala `member:{memberId}`; no recibe datos de
 ```txt
 connect  →  /ai   (auth: { token: <access_token> })
 emit     →  ai.message { "message": "¿Cuántas veces fui este mes?" }
+on       ←  ai.intent { "intent": "ATTENDANCE", "topic": "asistencias del mes" }
 on       ←  ai.response.chunk { "delta": "Según " }
 on       ←  ai.response.chunk { "delta": "tus registros..." }
 on       ←  ai.response.done  { "conversationId": 1, "message": { ... } }

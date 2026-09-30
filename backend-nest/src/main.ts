@@ -15,6 +15,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 import { validateEnvOnBootstrap } from './config/validate-env';
+import { corsOriginCallback } from './config/cors.config';
 
 import {
   getProductUploadConfig,
@@ -52,33 +53,15 @@ async function bootstrap() {
   );
 
   // CORS controlado por env (string CSV).
-  // En development también acepta túneles ngrok: la URL pública cambia
-  // cada vez que reinicias ngrok (plan free) y no conviene editar .env a mano.
+  // En development también acepta túneles ngrok y localhost en cualquier puerto
+  // (Flutter web cambia de puerto según disponibilidad en Windows).
   const corsOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const isDev = (process.env.NODE_ENV ?? 'development') !== 'production';
-  const isNgrokOrigin = (origin: string) =>
-    /^https:\/\/[a-z0-9-]+\.ngrok(-free)?\.app$/i.test(origin);
-
   app.enableCors({
-    origin:
-      corsOrigins.length === 0
-        ? true
-        : (origin, callback) => {
-            // Peticiones sin Origin (curl, Postman, app móvil nativa).
-            if (!origin) {
-              callback(null, true);
-              return;
-            }
-            if (corsOrigins.includes(origin) || (isDev && isNgrokOrigin(origin))) {
-              callback(null, true);
-              return;
-            }
-            callback(new Error(`Origen CORS no permitido: ${origin}`), false);
-          },
+    origin: corsOrigins.length === 0 ? true : corsOriginCallback,
     credentials: false,
   });
 

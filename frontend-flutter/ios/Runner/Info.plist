@@ -28,6 +28,10 @@
 		<true/>
 		<key>NSCameraUsageDescription</key>
 		<string>La cámara se usa para escanear el código QR del carnet del socio al registrar asistencia.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>El micrófono se usa para hablar con el asistente IA del gimnasio.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>El reconocimiento de voz convierte tu pregunta en texto para el asistente IA.</string>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

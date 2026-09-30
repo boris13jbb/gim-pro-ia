@@ -2,6 +2,52 @@
 
 ---
 
+## 2026-07-08 — IA: adaptación src/ia → WebSocket (intención del socio)
+
+### Cambio realizado
+Integración del patrón de análisis de intención (adaptado de `src/ia`) en `ai-assistant`: `AiIntentService`, evento WS `ai.intent`, enriquecimiento del contexto antes del streaming. Eliminado `src/ia` (código Iskartech/Groq/Knowledge incompatible con Iron Gym).
+
+### Archivos modificados
+- `backend-nest/src/ai-assistant/ai-chat.service.ts`
+- `backend-nest/src/ai-assistant/gemini.service.ts`
+- `backend-nest/src/ai-assistant/ai-assistant.module.ts`
+- `backend-nest/src/websocket/ai-chat.gateway.ts`
+- `backend-nest/.env.example`
+- `docs/07-endpoints-api.md`
+- `docs/05-bitacora-migracion.md`
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/ai-intent.service.ts`
+- `backend-nest/src/ai-assistant/types/ai-intent.types.ts`
+
+### Archivos eliminados
+- `backend-nest/src/ia/` (ia.service, gemini.service, ia.module — proyecto externo)
+
+### Pruebas realizadas
+- `npm run build` OK
+
+### Resultado
+Aprobado.
+
+---
+
+## 2026-07-08 — Fix: Flutter Web + ngrok (puertos 8088 reservados por Windows)
+
+### Cambio realizado
+Windows reserva 8080/8088/8089 (Hyper-V). Flutter no podía escuchar en 8088 (`errno 10013`). Túnel web ngrok y `web-ngrok.ps1` migrados al puerto **8888**; `host_header` en `ngrok-gym.yml`.
+
+### Archivos modificados
+- `scripts/ngrok-gym.yml`
+- `scripts/web-ngrok.ps1`
+
+### Resultado
+Aprobado — `localhost:8888`, web ngrok y API ngrok responden 200.
+
+### Próximo paso
+No usar puertos 8080/8088/8089 en Windows; usar **8888** con `.\scripts\web-ngrok.ps1`.
+
+---
+
 ## 2026-07-08 — Fix: API ngrok inaccesible (login web)
 
 ### Cambio realizado
@@ -73,10 +119,10 @@ Chat IA del socio (Flutter + API).
 - `flutter analyze` archivos IA sin errores
 
 ### Resultado
-Pendiente — requiere `npx prisma db push` en backend antes de probar en dispositivo.
+Aprobado — `npx prisma db push` aplicado (2026-07-08); backend `start:dev` en ejecución.
 
 ### Riesgos detectados
-Migración BD: columna `status` nueva en `ai_conversations` (default `active`).
+Sin riesgos pendientes (columna `status` ya sincronizada en BD).
 
 ### Rollback
 Revertir commits; eliminar columna `status` si ya se aplicó `db push`.
@@ -2474,3 +2520,89 @@ Pendiente de reiniciar NestJS y probar chat con Ollama en ejecución.
 
 ### Próximo paso
 `ollama serve` + `npm run start:dev` + chat desde Flutter.
+
+---
+
+## 2026-07-09 — Botón de llamada de voz en chat IA (Flutter)
+
+### Cambio realizado
+Botón de **llamada de voz** en el asistente IA: STT local → WebSocket/REST existente → TTS de la respuesta. Modo conversación continua (escuchar → responder → hablar → volver a escuchar).
+
+### Archivos modificados
+- `frontend-flutter/lib/features/ai/ai_chat_page.dart`
+- `frontend-flutter/pubspec.yaml`
+- `frontend-flutter/android/app/src/main/AndroidManifest.xml`
+- `frontend-flutter/ios/Runner/Info.plist`
+
+### Archivos creados
+- `frontend-flutter/lib/services/ai_voice_service.dart`
+
+### Funcionalidad afectada
+Chat IA del socio (pestaña Asistente).
+
+### Código reutilizado
+`AiSocketService.sendMessage()`, `AiService.sendMessage()`, flujo streaming sin cambios en backend.
+
+### Duplicados revisados
+Sin duplicar lógica de chat; voz encapsulada en `AiVoiceService`.
+
+### Optimizaciones realizadas
+Permisos micrófono solo al activar llamada; reconocimiento en español si está disponible.
+
+### Pruebas realizadas
+- `flutter pub get` + `flutter analyze` en archivos nuevos → OK (solo infos deprecación resueltas)
+
+### Resultado
+Pendiente de prueba manual en Chrome / Android.
+
+### Riesgos detectados
+- Web: requiere permiso de micrófono en el navegador; STT depende del motor del browser.
+- No es Gemini Live bidireccional; es voz asistida con pipeline de texto existente.
+
+### Rollback
+Quitar dependencias `speech_to_text`, `flutter_tts`, `permission_handler` y revertir `ai_chat_page.dart`.
+
+### Próximo paso
+Probar llamada de voz con backend activo y socio autenticado.
+
+---
+
+## 2026-07-09 — Proveedor IA cambiado a Gemini
+
+### Cambio realizado
+`AI_PROVIDER=gemini` en `backend-nest/.env` (antes `ollama`). Modelo `gemini-2.0-flash`.
+
+### Archivos modificados
+- `backend-nest/.env`
+
+### Resultado
+Backend reiniciado. Pendiente prueba manual en Asistente.
+
+### Próximo paso
+Probar chat/voz desde Flutter con socio autenticado.
+
+---
+
+## 2026-07-09 — Pipeline de voz local: Whisper → Ollama → Piper
+
+### Cambio realizado
+- `AI_PROVIDER=ollama` con `OLLAMA_MODEL=qwen3:8b`
+- Endpoints `GET /api/ai/voice/status` y `POST /api/ai/voice/turn`
+- Servicios NestJS: Whisper STT (faster-whisper), Piper TTS, orquestación `AiVoiceService`
+- Flutter: graba WAV, sube al backend, reproduce respuesta Piper
+- Script Python `scripts/voice/transcribe.py`
+
+### Archivos creados
+- `backend-nest/src/ai-assistant/voice/*`, `ai-voice.controller.ts`
+- `scripts/voice/transcribe.py`, `requirements-voice.txt`, `README.md`
+
+### Archivos modificados
+- `backend-nest/.env`, `.env.example`
+- `frontend-flutter/lib/services/ai_voice_service.dart`, `ai_service.dart`, `ai_chat_page.dart`
+- `frontend-flutter/pubspec.yaml`
+
+### Resultado
+Build backend OK. Pendiente instalar faster-whisper, Piper y modelos Ollama.
+
+### Próximo paso
+`ollama pull qwen3:8b`, `pip install -r scripts/voice/requirements-voice.txt`, configurar Piper en `.env`.

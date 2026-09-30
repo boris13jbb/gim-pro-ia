@@ -385,6 +385,15 @@ npm run audit:phase-11
 | 11 | API | Mensaje en chat archivado | POST `/ai/chat` | 400 — debe restaurar primero | Por diseño | Pendiente manual |
 | 11 | Backend | `npm run build` | — | compila sin errores | Build OK | OK |
 
+## Fase 11 (Slice 2c) — Llamada de voz en chat IA
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 11 | Asistente | Botón teléfono (iniciar) | STT local + `ai.message` | escucha, transcribe y envía | Implementado | Pendiente manual |
+| 11 | Asistente | Respuesta hablada | TTS local | lee respuesta del asistente | Implementado | Pendiente manual |
+| 11 | Asistente | Botón colgar (finalizar) | — | detiene micrófono y voz | Implementado | Pendiente manual |
+| 11 | Flutter | `flutter analyze` (voz) | — | sin issues | No issues found | OK |
+
 ## Fase 11 (Slice 3) — WebSockets: notificaciones en tiempo real
 
 | Fase | Pantalla/Módulo | Botón/Acción | Endpoint/Evento | Resultado esperado | Resultado obtenido | Estado |

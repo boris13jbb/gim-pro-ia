@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/api_response.dart';
 import '../../services/ai_service.dart';
 import '../../services/ai_socket_service.dart';
+import '../../services/ai_voice_service.dart';
 import '../../widgets/state_views.dart';
 
 class AiChatPage extends StatefulWidget {
@@ -18,6 +20,7 @@ class AiChatPage extends StatefulWidget {
 class _AiChatPageState extends State<AiChatPage> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
+  final _voiceService = AiVoiceService();
 
   AiService get _aiService => context.read<AiService>();
   AiSocketService get _aiSocket => context.read<AiSocketService>();
@@ -25,6 +28,12 @@ class _AiChatPageState extends State<AiChatPage> {
   bool _loadingHistory = true;
   bool _sending = false;
   bool _managingConversation = false;
+  bool _voiceCallActive = false;
+  bool _voiceInitializing = false;
+  bool _listening = false;
+  bool _speaking = false;
+  bool _voiceSubmitting = false;
+  double _soundLevel = 0;
   String? _error;
   int? _conversationId;
   String? _conversationTitle;
@@ -41,6 +50,8 @@ class _AiChatPageState extends State<AiChatPage> {
 
   @override
   void dispose() {
+    unawaited(_endVoiceCall());
+    _voiceService.dispose();
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -297,9 +308,12 @@ class _AiChatPageState extends State<AiChatPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _send() async {
-    final text = _inputController.text.trim();
+  Future<void> _send({String? message}) async {
+    final text = (message ?? _inputController.text).trim();
     if (text.isEmpty || _sending || _managingConversation) return;
+
+    await _voiceService.stopListening();
+    if (mounted) setState(() => _listening = false);
 
     setState(() {
       _sending = true;
@@ -340,6 +354,11 @@ class _AiChatPageState extends State<AiChatPage> {
               : '${text.substring(0, 57)}...';
         });
       }
+      if (_voiceCallActive && assistantBubble.text.trim().isNotEmpty) {
+        await _speakAssistantReply(assistantBubble.text);
+      } else if (_voiceCallActive && mounted) {
+        unawaited(_startVoiceListening());
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -352,6 +371,9 @@ class _AiChatPageState extends State<AiChatPage> {
           }
           _inputController.text = text;
         });
+      }
+      if (_voiceCallActive && mounted) {
+        unawaited(_startVoiceListening());
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -372,6 +394,11 @@ class _AiChatPageState extends State<AiChatPage> {
               text.length <= 60 ? text : '${text.substring(0, 57)}...';
         });
         _scrollToBottom();
+        if (_voiceCallActive && result.reply.trim().isNotEmpty) {
+          await _speakAssistantReply(result.reply);
+        } else if (_voiceCallActive && mounted) {
+          unawaited(_startVoiceListening());
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -403,6 +430,225 @@ class _AiChatPageState extends State<AiChatPage> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  Future<void> _toggleVoiceCall() async {
+    if (_voiceCallActive) {
+      await _endVoiceCall();
+      return;
+    }
+    if (_sending || _managingConversation || _voiceInitializing) return;
+
+    setState(() => _voiceInitializing = true);
+    try {
+      final ready = await _voiceService.initialize(aiService: _aiService);
+      if (!ready) {
+        if (mounted) {
+          setState(() {
+            _error = kIsWeb
+                ? 'No se pudo activar el micrófono. Usa Chrome o Edge, permite el '
+                    'micrófono en la barra de direcciones y recarga la página.'
+                : 'No se pudo activar el micrófono. Ve a Ajustes > Apps > Iron Gym '
+                    'y permite Micrófono.';
+          });
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _voiceCallActive = true;
+        _error = null;
+      });
+      if (_voiceService.usesServerPipeline) {
+        _showSnack(
+          'Voz local: Whisper → Ollama → Piper. Habla y toca Enviar.',
+        );
+        await _startServerRecording();
+      } else {
+        _showSnack('Llamada activa. Habla y haz una pausa corta para enviar.');
+        await _startVoiceListening();
+      }
+    } finally {
+      if (mounted) setState(() => _voiceInitializing = false);
+    }
+  }
+
+  Future<void> _submitVoiceMessage(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _voiceSubmitting || !_voiceCallActive) return;
+
+    _voiceSubmitting = true;
+    try {
+      await _voiceService.stopListening();
+      if (!mounted) return;
+      setState(() => _listening = false);
+      await _send(message: trimmed);
+    } finally {
+      _voiceSubmitting = false;
+    }
+  }
+
+  Future<void> _startServerRecording() async {
+    if (!_voiceCallActive || _sending || _speaking || _voiceSubmitting || !mounted) {
+      return;
+    }
+    await _voiceService.startRecording();
+    if (mounted) setState(() => _listening = true);
+  }
+
+  Future<void> _processServerVoiceTurn() async {
+    if (!_voiceCallActive || _voiceSubmitting) return;
+
+    _voiceSubmitting = true;
+    setState(() {
+      _sending = true;
+      _listening = false;
+      _error = null;
+    });
+
+    try {
+      final result = await _voiceService.sendRecording(
+        conversationId: _conversationId,
+      );
+      if (result == null || !mounted) return;
+
+      setState(() {
+        _conversationId = result.conversationId;
+        _messages.add(_ChatBubble(isUser: true, text: result.transcript));
+        _messages.add(_ChatBubble(isUser: false, text: result.reply));
+        _conversationTitle ??= result.transcript.length <= 60
+            ? result.transcript
+            : '${result.transcript.substring(0, 57)}...';
+        _inputController.clear();
+      });
+      _scrollToBottom();
+
+      setState(() => _speaking = true);
+      if (result.audioBase64 != null && result.audioBase64!.isNotEmpty) {
+        await _voiceService.playServerAudio(result.audioBase64!);
+      } else {
+        await _voiceService.speakLocal(result.reply);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = _formatError(e));
+    } finally {
+      _voiceSubmitting = false;
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _speaking = false;
+        });
+      }
+      if (_voiceCallActive && mounted) {
+        await _startServerRecording();
+      }
+    }
+  }
+
+  Future<void> _startVoiceListening() async {
+    if (!_voiceCallActive || _sending || _speaking || _voiceSubmitting || !mounted) {
+      return;
+    }
+
+    setState(() => _listening = true);
+    final started = await _voiceService.startListening(
+      onPartial: (partial) {
+        if (!mounted || !_voiceCallActive) return;
+        setState(() => _inputController.text = partial);
+      },
+      onFinal: (finalText) async {
+        await _submitVoiceMessage(finalText);
+      },
+      onSoundLevel: (level) {
+        if (!mounted || !_voiceCallActive) return;
+        setState(() => _soundLevel = level);
+      },
+      onStatus: (status) async {
+        // Web: al terminar la escucha, envía el texto parcial si no hubo finalResult.
+        if (status != 'done' && status != 'notListening') return;
+        if (!mounted || !_voiceCallActive || _voiceSubmitting || _sending) return;
+
+        final pending = _inputController.text.trim();
+        if (pending.isNotEmpty) {
+          await _submitVoiceMessage(pending);
+          return;
+        }
+        if (_voiceCallActive && !_sending && !_speaking && mounted) {
+          setState(() => _listening = false);
+          await _startVoiceListening();
+        }
+      },
+      onError: (message) {
+        if (!mounted) return;
+        setState(() {
+          _listening = false;
+          _error = message;
+        });
+      },
+    );
+
+    if (!started && mounted) {
+      setState(() => _listening = false);
+    }
+  }
+
+  Future<void> _sendVoiceNow() async {
+    if (!_voiceCallActive) return;
+    if (_voiceService.usesServerPipeline) {
+      await _processServerVoiceTurn();
+      return;
+    }
+    final captured = await _voiceService.stopListeningCapture();
+    final text = captured.isNotEmpty ? captured : _inputController.text.trim();
+    await _submitVoiceMessage(text);
+  }
+
+  Future<void> _speakAssistantReply(String text) async {
+    if (!_voiceCallActive || !mounted || _voiceService.usesServerPipeline) return;
+
+    setState(() => _speaking = true);
+    try {
+      await _voiceService.speakLocal(text);
+    } catch (_) {
+      // Si TTS falla, la conversación de voz continúa escuchando.
+    }
+    if (!mounted) return;
+    setState(() => _speaking = false);
+    if (_voiceCallActive) {
+      await _startVoiceListening();
+    }
+  }
+
+  Future<void> _endVoiceCall() async {
+    await _voiceService.stopRecording();
+    await _voiceService.stopListening();
+    await _voiceService.stopSpeaking();
+    if (!mounted) return;
+    setState(() {
+      _voiceCallActive = false;
+      _listening = false;
+      _speaking = false;
+    });
+  }
+
+  String _voiceStatusLabel() {
+    if (_speaking) return 'El asistente está respondiendo...';
+    if (_sending) return 'Procesando tu pregunta...';
+    if (_listening) {
+      if (_voiceService.usesServerPipeline) {
+        return 'Grabando — habla y toca Enviar';
+      }
+      final draft = _inputController.text.trim();
+      if (draft.isNotEmpty) {
+        return 'Escuchando: "$draft"';
+      }
+      if (_soundLevel > 2) {
+        return 'Te escucho… sigue hablando';
+      }
+      return 'Escuchando — habla cerca del micrófono';
+    }
+    return 'Llamada de voz activa';
   }
 
   Future<void> _onMenuSelected(String value) async {
@@ -574,6 +820,51 @@ class _AiChatPageState extends State<AiChatPage> {
               ],
             ),
           ),
+        if (_voiceCallActive)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+            child: Material(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(
+                      _listening ? Icons.mic : Icons.volume_up_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _voiceStatusLabel(),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    if (_listening ||
+                        _inputController.text.trim().isNotEmpty)
+                      TextButton(
+                        onPressed: (_sending || _voiceSubmitting)
+                            ? null
+                            : _sendVoiceNow,
+                        child: const Text('Enviar'),
+                      ),
+                    if (_listening)
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         SafeArea(
           top: false,
           child: Padding(
@@ -592,14 +883,45 @@ class _AiChatPageState extends State<AiChatPage> {
                     maxLines: 4,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _send(),
-                    decoration: const InputDecoration(
-                      hintText: 'Escribe tu pregunta...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: _voiceCallActive
+                          ? 'Habla o escribe tu pregunta...'
+                          : 'Escribe tu pregunta...',
+                      border: const OutlineInputBorder(),
                       isDense: true,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  tooltip: _voiceCallActive
+                      ? 'Finalizar llamada de voz'
+                      : 'Iniciar llamada de voz',
+                  style: IconButton.styleFrom(
+                    backgroundColor: _voiceCallActive
+                        ? theme.colorScheme.errorContainer
+                        : null,
+                    foregroundColor: _voiceCallActive
+                        ? theme.colorScheme.onErrorContainer
+                        : null,
+                  ),
+                  onPressed: (_sending || _managingConversation || _voiceInitializing)
+                      ? null
+                      : _toggleVoiceCall,
+                  icon: _voiceInitializing
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                        )
+                      : Icon(
+                          _voiceCallActive ? Icons.call_end : Icons.phone_in_talk,
+                        ),
+                ),
+                const SizedBox(width: 4),
                 IconButton.filled(
                   onPressed: (_sending || _managingConversation) ? null : _send,
                   icon: _sending
