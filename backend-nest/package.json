@@ -33,7 +33,8 @@
     "audit:phase-08": "node scripts/audit-phase-08.mjs",
     "audit:phase-09": "node scripts/audit-phase-09.mjs",
     "audit:phase-10": "node scripts/audit-phase-10.mjs",
-    "audit:phase-11": "node scripts/audit-phase-11.mjs"
+    "audit:phase-11": "node scripts/audit-phase-11.mjs",
+    "audit:phase-17": "node scripts/validate-phase-17.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-03-31 — Plan: salir de dependencia de ngrok
+
+### Cambio realizado
+Documento de plan para reemplazar ngrok por desarrollo LAN + dominio/HTTPS (VPS o Cloudflare Tunnel), con fases, checklist y limpieza de acoplamiento en código.
+
+### Archivos creados
+- `docs/PLAN-SALIR-DE-NGROK.md`
+
+### Archivos modificados
+- `docs/05-bitacora-migracion.md`
+
+### Resultado
+Pendiente de decisión (dominio/hosting) y aprobación para implementar Fase 1 (LAN) y/o Fase 2 (VPS/Tunnel).
+
+### Próximo paso
+Usuario completa sección 10 del plan y aprueba opción 2A (VPS) o 2B (Cloudflare Tunnel).
+
+---
+
 ## 2026-03-30 — Fase SaaS 1: Auditoría + diseño multi-tenant
 
 ### Cambio realizado
@@ -2656,3 +2675,55 @@ Build backend OK. Pendiente instalar faster-whisper, Piper y modelos Ollama.
 
 ### Próximo paso
 `ollama pull qwen3:8b`, `pip install -r scripts/voice/requirements-voice.txt`, configurar Piper en `.env`.
+
+---
+
+## 2026-10-01 — Fase 17: validación completa y corrección de fechas DATE/UTC
+
+### Cambio realizado
+Validación end-to-end de alertas de membresía. Se detectó y corrigió un defecto **ALTO**: columnas MySQL/Prisma `@db.Date` llegan como medianoche UTC y, en zona `America/Guayaquil` (UTC-5), desplazaban los umbrales 7/3/1/0 (p. ej. 3 días → 2, 8 → 7). También se await-ea `notifyMember` en el job para idempotencia real.
+
+### Archivos modificados
+- `backend-nest/src/common/utils/date.util.ts` (`fromPrismaDate`, `localCalendarAsUtcDate`)
+- `backend-nest/src/membership-alerts/membership-alerts.service.ts`
+- `backend-nest/src/websocket/realtime.service.ts` (`notifyMember` → `Promise<void>`)
+- `backend-nest/package.json` (`audit:phase-17`)
+- `docs/fases/fase-17-alertas-membresia.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/07-endpoints-api.md` (sin cambio de contrato; nota de validación)
+
+### Archivos creados
+- `backend-nest/scripts/validate-phase-17.mjs`
+
+### Funcionalidad afectada
+Job/endpoint `POST /api/membership-alerts/run` — cálculo correcto de días restantes y ventana de consulta DATE.
+
+### Código reutilizado
+`NotificationsService.hasAlertKeyToday`, `RealtimeService`, flujo campana Flutter existente (Fase 16).
+
+### Duplicados revisados
+Sin duplicar helpers de fecha: se extendió `date.util.ts` ya usado en el proyecto.
+
+### Optimizaciones realizadas
+Await de persistencia en el job (evita carrera en doble `run` el mismo día).
+
+### Comentarios agregados en el código
+Regla de zona horaria DATE/UTC en `date.util.ts` y `membership-alerts.service.ts`.
+
+### Pruebas realizadas
+- `npm run build` / `lint` / `test` → OK
+- `node scripts/validate-phase-17.mjs` → 18/18 PASS (auth, roles, umbrales, vencidas, idempotencia, aislamiento)
+- `flutter analyze` (campana/notificaciones) + `flutter test`
+
+### Resultado
+Backend/API validado. Pendiente confirmación visual manual de la campana Flutter por el usuario.
+
+### Riesgos detectados
+- Medio residual: `computeMembershipEffectiveStatus` / otros módulos con DATE pueden tener el mismo desfase UTC (fuera del alcance de cierre Fase 17).
+- Bajo: prueba UI campana pendiente de evidencia manual.
+
+### Rollback
+Revertir commits de esta rama `fix/fase-17-membership-alerts-dates`.
+
+### Próximo paso
+Confirmación visual campana Flutter; aprobación formal de cierre Fase 17.

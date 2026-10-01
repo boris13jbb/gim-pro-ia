@@ -549,10 +549,14 @@ npm run audit:phase-11
 
 | Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
 |------|-----------------|--------------|----------|-------------------|-------------------|--------|
-| 17 | Backend | `npm run build` + lint | — | OK | OK | OK |
-| 17 | Flutter | `flutter analyze` / `test` | — | OK | OK | OK |
-| 17 | Admin | Ejecutar job manual | `POST /membership-alerts/run` | `{ sent, skipped, expired }` | — | Pendiente manual |
-| 17 | Socio | Membresía vence en 3 días + run | campana | notificación `membership.expiring` | — | Pendiente manual |
-| 17 | Socio | Segundo run mismo día | — | sin duplicado (`skipped` > 0) | — | Pendiente manual |
-| 17 | Socio | Membresía vencida ayer + run | campana | `membership.updated` vencida | — | Pendiente manual |
-| 17 | Cron | Job 08:00 (prod) | scheduler | alertas automáticas | — | Pendiente manual |
+| 17 | Backend | `npm run build` + lint + test | — | OK | OK (2026-10-01) | OK |
+| 17 | Script | `npm run audit:phase-17` | varios | 18/18 PASS | 18/18 PASS | OK |
+| 17 | Admin | Ejecutar job manual | `POST /membership-alerts/run` | `{ sent, skipped, expired }` | `sent=4 skipped=0 expired=1` (escenario controlado) | OK |
+| 17 | Seguridad | Sin token | `POST /membership-alerts/run` | 401 | 401 | OK |
+| 17 | Seguridad | Recepcionista | `POST /membership-alerts/run` | 403 | 403 | OK |
+| 17 | Socio | Umbrales 7/3/1/0 | campana/API | `membership.expiring` | 1 por umbral; 2/8/30 sin alerta | OK |
+| 17 | Socio | Segundo run mismo día | — | sin duplicado (`skipped` > 0) | `sent=0 skipped=4` | OK |
+| 17 | Socio | Membresía vencida ayer + run | API | `membership.updated` + estado vencida | OK | OK |
+| 17 | Seguridad | Aislamiento A/B | `GET /notifications` | A no ve B | PASS | OK |
+| 17 | Flutter | Campana visual | UI | badge + listado | — | Pendiente manual |
+| 17 | Cron | Job 08:00 (prod) | scheduler | alertas automáticas | código revisado; no forzado en validación | Pendiente prod |

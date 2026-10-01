@@ -12,6 +12,33 @@ export function startOfDay(date: Date): Date {
   return d;
 }
 
+/**
+ * Prisma/MySQL `@db.Date` suele devolver medianoche UTC (YYYY-MM-DDT00:00:00.000Z).
+ * En America/Guayaquil (UTC-5), `startOfDay()` local adelanta/atrasa el día calendario.
+ * Esta función recupera el día de calendario usando componentes UTC.
+ */
+export function fromPrismaDate(date: Date): Date {
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+}
+
+/**
+ * Convierte un día de calendario local a medianoche UTC.
+ * Útil para filtrar columnas DATE de MySQL/Prisma sin desfase por zona horaria.
+ */
+export function localCalendarAsUtcDate(date: Date = new Date()): Date {
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+}
+
 export function getTodayRange() {
   const start = startOfDay(new Date());
   const end = new Date(start);

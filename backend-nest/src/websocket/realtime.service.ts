@@ -19,9 +19,17 @@ export class RealtimeService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  notifyMember(memberId: number, notification: RealtimeNotification): void {
-    if (!memberId) return;
-    void this.deliver(memberId, notification);
+  /**
+   * Persiste + emite. Devuelve Promise para que jobs (p. ej. alertas de
+   * membresía) puedan await y garantizar idempotencia antes del siguiente ciclo.
+   * Callers que no necesiten esperar pueden ignorar el retorno (fire-and-forget).
+   */
+  notifyMember(
+    memberId: number,
+    notification: RealtimeNotification,
+  ): Promise<void> {
+    if (!memberId) return Promise.resolve();
+    return this.deliver(memberId, notification);
   }
 
   private async deliver(

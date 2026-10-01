@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { socios_estado, suscripciones_estado } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { startOfDay, todayDateString } from '../common/utils/date.util';
+import {
+  fromPrismaDate,
+  localCalendarAsUtcDate,
+  startOfDay,
+  todayDateString,
+} from '../common/utils/date.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RealtimeService } from '../websocket/realtime.service';
 import { getMembershipAlertsConfig } from './membership-alerts.config';
@@ -47,11 +52,14 @@ export class MembershipAlertsService {
   }
 
   private async expireOverdueMemberships(): Promise<number> {
-    const today = startOfDay(new Date());
+    // Regla de negocio / zona horaria:
+    // `fecha_fin` es DATE. Comparar con medianoche UTC del día local evita
+    // marcar como vencida una membresía que aún es válida “hoy” en Ecuador.
+    const todayUtc = localCalendarAsUtcDate();
     const overdue = await this.prisma.suscripciones.findMany({
       where: {
         estado: suscripciones_estado.activa,
-        fecha_fin: { lt: today },
+        fecha_fin: { lt: todayUtc },
         socio_id: { not: null },
       },
       include: {
@@ -76,7 +84,8 @@ export class MembershipAlertsService {
       );
       if (alreadySent) continue;
 
-      this.realtime.notifyMember(membership.socio_id, {
+      // Await: la idempotencia del job depende de que `alertKey` ya esté en BD.
+      await this.realtime.notifyMember(membership.socio_id, {
         type: 'membership.updated',
         title: 'Membresía vencida',
         body: membership.planes?.nombre
@@ -98,17 +107,22 @@ export class MembershipAlertsService {
       return { sent: 0, skipped: 0 };
     }
 
-    const today = startOfDay(new Date());
+    const todayLocal = startOfDay(new Date());
+    const todayUtc = localCalendarAsUtcDate();
     const maxDays = Math.max(...alertDays);
-    const latestEnd = new Date(today);
-    latestEnd.setDate(latestEnd.getDate() + maxDays);
-    latestEnd.setHours(23, 59, 59, 999);
+    const latestEndUtc = localCalendarAsUtcDate(
+      new Date(
+        todayLocal.getFullYear(),
+        todayLocal.getMonth(),
+        todayLocal.getDate() + maxDays,
+      ),
+    );
 
     const memberships = await this.prisma.suscripciones.findMany({
       where: {
         estado: suscripciones_estado.activa,
         socio_id: { not: null },
-        fecha_fin: { gte: today, lte: latestEnd },
+        fecha_fin: { gte: todayUtc, lte: latestEndUtc },
       },
       include: {
         planes: { select: { nombre: true } },
@@ -126,7 +140,7 @@ export class MembershipAlertsService {
         continue;
       }
 
-      const daysRemaining = this.daysUntil(membership.fecha_fin, today);
+      const daysRemaining = this.daysUntil(membership.fecha_fin, todayLocal);
       if (!alertDays.includes(daysRemaining)) {
         continue;
       }
@@ -144,7 +158,8 @@ export class MembershipAlertsService {
       const planName = membership.planes?.nombre ?? 'tu plan';
       const body = this.buildExpiringBody(planName, daysRemaining);
 
-      this.realtime.notifyMember(membership.socio_id, {
+      // Await: evita carrera en ejecuciones repetidas del mismo día.
+      await this.realtime.notifyMember(membership.socio_id, {
         type: 'membership.expiring',
         title: 'Membresía por vencer',
         body,
@@ -162,8 +177,12 @@ export class MembershipAlertsService {
     return { sent, skipped };
   }
 
+  /**
+   * Días restantes entre hoy (calendario local) y `fecha_fin` (DATE de Prisma).
+   * Usa `fromPrismaDate` para no desplazar el umbral 7/3/1/0 por UTC-5.
+   */
   private daysUntil(endDate: Date, today: Date): number {
-    const end = startOfDay(endDate);
+    const end = fromPrismaDate(endDate);
     const diffMs = end.getTime() - today.getTime();
     return Math.round(diffMs / (1000 * 60 * 60 * 24));
   }

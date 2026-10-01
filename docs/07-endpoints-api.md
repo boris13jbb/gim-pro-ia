@@ -1356,7 +1356,9 @@ Variables: `MEMBERSHIP_ALERTS_ENABLED`, `MEMBERSHIP_ALERTS_CRON`, `MEMBERSHIP_AL
 
 Ejecuta manualmente el job de alertas (mismo efecto que el cron). Rol: `admin`.
 
-**Response 200:**
+**Auth:** Bearer JWT. Sin token → `401`. Rol distinto de `admin` → `403`.
+
+**Response 200/201 (según wrapper):**
 
 ```json
 {
@@ -1365,6 +1367,14 @@ Ejecuta manualmente el job de alertas (mismo efecto que el cron). Rol: `admin`.
   "expired": 0
 }
 ```
+
+| Campo | Significado |
+|-------|-------------|
+| `sent` | Alertas `membership.expiring` nuevas creadas |
+| `skipped` | Omitidas (duplicado del día o socio inactivo) |
+| `expired` | Membresías marcadas `vencida` en esta corrida |
+
+**Validación 2026-10-01:** script `npm run audit:phase-17` (18/18 PASS) tras corrección DATE/UTC de umbrales.
 
 ---
 

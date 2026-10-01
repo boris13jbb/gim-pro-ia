@@ -1,8 +1,9 @@
 # Fase 17 — Alertas proactivas de membresía por vencer
 
-**Estado:** Implementada — pendiente aprobación y prueba manual
+**Estado:** Validada en backend/API (2026-10-01) — pendiente confirmación visual campana Flutter y aprobación formal de cierre
 
-**Fecha:** 2026-07-07
+**Fecha implementación:** 2026-07-07  
+**Fecha validación:** 2026-10-01
 
 ## Objetivo
 
@@ -10,7 +11,7 @@ Notificar automáticamente a los socios cuando su membresía activa está por ve
 
 ## Backend NestJS
 
-### Dependencia nueva
+### Dependencia
 
 - `@nestjs/schedule` — job cron diario
 
@@ -23,13 +24,32 @@ Notificar automáticamente a los socios cuando su membresía activa está por ve
 | `membership-alerts.controller.ts` | `POST /membership-alerts/run` (admin, prueba manual) |
 | `membership-alerts.config.ts` | Parseo de variables de entorno |
 
-### Reglas de negocio
+### Contrato real — `POST /api/membership-alerts/run`
+
+| Campo | Valor |
+|-------|--------|
+| Method | `POST` |
+| Path | `/api/membership-alerts/run` |
+| Auth | JWT Bearer obligatorio |
+| Authorization | Solo rol `admin` (`403` si otro rol) |
+| Body | vacío |
+| Response 201 (wrapper proyecto) | `{ sent, skipped, expired }` |
+| Sin token | `401` |
+| Side effects | Inserta filas en `notifications`; puede marcar `suscripciones.estado=vencida` |
+
+### Reglas de negocio (verificadas)
 
 1. Solo membresías con `estado = activa` y socio activo
-2. Umbrales configurables: `MEMBERSHIP_ALERT_DAYS` (default `7,3,1,0`)
+2. Umbrales configurables: `MEMBERSHIP_ALERT_DAYS` (default **`7,3,1,0`** — valor real en código/config)
 3. Cada alerta usa `alertKey` en `data` para no repetir el mismo aviso el mismo día
-4. El job también marca como `vencida` membresías con `fecha_fin` pasada y notifica al socio
-5. Tipo de notificación: `membership.expiring` (por vencer) o `membership.updated` (ya vencida)
+4. El job también marca como `vencida` membresías con `fecha_fin` **anterior a hoy** (calendario local) y notifica `membership.updated`
+5. Tipo por vencer: `membership.expiring`
+
+### Corrección 2026-10-01 (ALTO)
+
+Prisma/MySQL `@db.Date` llega como medianoche UTC. En Ecuador (UTC-5) eso desplazaba umbrales.
+
+**Fix:** `fromPrismaDate()` + `localCalendarAsUtcDate()` en `date.util.ts`, usados por el job. Además `await notifyMember()` para idempotencia.
 
 ### Variables de entorno (`.env.example`)
 
@@ -42,35 +62,41 @@ MEMBERSHIP_ALERT_DAYS=7,3,1,0
 ## Flutter (socio)
 
 - Icono `membership.expiring` en campana (`Icons.event_busy`)
-- Sin cambios de API cliente: reutiliza historial persistido y WebSocket
+- Reutiliza historial persistido (`GET /notifications`) y WebSocket `/events`
+- Aislamiento: `memberId` solo desde JWT (validado en API)
 
-## Endpoints
+## Pruebas automáticas / script
 
-| Método | Ruta | Rol | Uso |
-|--------|------|-----|-----|
-| POST | `/membership-alerts/run` | admin | Disparo manual del job (pruebas) |
+```bash
+cd backend-nest
+npm run build && npm run lint && npm test -- --passWithNoTests
+npm run audit:phase-17   # requiere API en :3000
+```
 
-## Pruebas automáticas
+Validación 2026-10-01: **18/18 PASS** (auth, roles, umbrales, vencidas, idempotencia, aislamiento).
 
-- `npm run build` + `npm run lint` → OK
-- `flutter analyze` → 0 errores (avisos de estilo previos)
-- `flutter test` → 1/1 OK
+## Prueba manual UI (campana)
 
-## Prueba manual sugerida
-
-1. Crear o ajustar una membresía activa con `fecha_fin` = hoy + 3 días
-2. Login admin → `POST /api/membership-alerts/run` (Swagger o curl)
-3. Login socio → campana debe mostrar “Membresía por vencer”
-4. Repetir `run` el mismo día → no debe duplicar (`skipped` > 0 en respuesta)
-5. Ajustar `fecha_fin` a ayer → `run` marca vencida y notifica “Membresía vencida”
+1. Admin: `POST /api/membership-alerts/run` (o script) con membresía a 3 días
+2. Login socio → campana con badge → listado “Membresía por vencer”
+3. Segundo `run` mismo día → sin duplicado
+4. Membresía vencida ayer → “Membresía vencida”
 
 ## Rollback
 
 1. Quitar `MembershipAlertsModule` y `ScheduleModule` de `app.module.ts`
 2. Eliminar carpeta `src/membership-alerts/`
-3. Desinstalar `@nestjs/schedule` si no se usa en otro módulo
-4. Revertir cambios en `notifications.service.ts` y tipo `membership.expiring`
+3. Revertir helpers DATE en `date.util.ts` si no se usan
+4. Revertir `notifyMember` Promise si se desea el comportamiento previo
 
-## Estado final
+## Resumen de cierre (pendiente aprobación usuario)
 
-Lista para prueba manual con `POST /membership-alerts/run`.
+| Criterio | Estado |
+|----------|--------|
+| Implementación revisada | OK |
+| Endpoint probado | OK |
+| Reglas / fechas / duplicados | OK (tras fix) |
+| Auth / authz / aislamiento | OK |
+| Tests automatizados / build | OK |
+| Campana Flutter visual | Pendiente evidencia manual |
+| Aprobación formal | Pendiente usuario |
