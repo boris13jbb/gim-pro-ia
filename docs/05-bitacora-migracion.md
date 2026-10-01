@@ -2716,14 +2716,57 @@ Regla de zona horaria DATE/UTC en `date.util.ts` y `membership-alerts.service.ts
 - `flutter analyze` (campana/notificaciones) + `flutter test`
 
 ### Resultado
-Backend/API validado. Pendiente confirmación visual manual de la campana Flutter por el usuario.
+Backend/API validado. Pendiente confirmación visual manual de la campana Flutter por el usuario. *(actualizado: ver entrada de cierre formal 2026-10-01)*
 
 ### Riesgos detectados
 - Medio residual: `computeMembershipEffectiveStatus` / otros módulos con DATE pueden tener el mismo desfase UTC (fuera del alcance de cierre Fase 17).
-- Bajo: prueba UI campana pendiente de evidencia manual.
+- Bajo: prueba UI campana pendiente de evidencia manual. *(cerrado en entrada siguiente)*
 
 ### Rollback
 Revertir commits de esta rama `fix/fase-17-membership-alerts-dates`.
 
 ### Próximo paso
 Confirmación visual campana Flutter; aprobación formal de cierre Fase 17.
+
+---
+
+## 2026-10-01 — Fase 17: cierre formal (F17-09 PASS)
+
+### Cambio realizado
+Cierre documental de Fase 17 tras validación manual F17-09 (campana Flutter Web). Sin cambios de código en este paso.
+
+### Evidencia F17-09 (manual)
+- Flutter Web `http://localhost:8888` + API `http://127.0.0.1:3000`
+- Socio: Socio F17 Campana UI / DNI `F17UI9001` / plan Mensual Básico / vence `04/10/2026` (3 días)
+- Badge 1 → título `Membresía por vencer` → cuerpo con plan y 3 días → icono `event_busy` → hora `13:44`
+- Marcado leído + persistencia OK; Run#1 `sent=1 skipped=0 expired=0`; Run#2 `sent=0 skipped=1 expired=0`
+- Aislamiento: cubierto por F17-10 automatizado
+
+### Defectos ya corregidos (conservados)
+- F17-D01 DATE/UTC → `fromPrismaDate` / `localCalendarAsUtcDate` — PASS
+- F17-D02 await `notifyMember` — PASS
+
+### Archivos modificados (solo docs)
+- `docs/fases/fase-17-alertas-membresia.md`
+- `docs/06-checklist-pruebas.md`
+- `docs/05-bitacora-migracion.md`
+- `docs/07-endpoints-api.md`
+
+### Matriz final
+F17-01 … F17-13 = PASS. **FASE 17 — APROBADA Y CERRADA.**
+
+### Pruebas en este paso
+No se re-ejecutó build/lint/test (sin cambios de código). Resultados previos de `c4c5adc` siguen vigentes.
+
+### Resultado
+Fase 17 cerrada formalmente.
+
+### Riesgos detectados
+- Medio residual: otros módulos con DATE pueden heredar el mismo desfase UTC (fuera de Fase 17).
+- Bajo: cron 08:00 depende de zona horaria del servidor.
+
+### Rollback
+Revertir commit documental de cierre + commit `c4c5adc` si se necesita deshacer la fase.
+
+### Próximo paso
+A criterio del usuario: merge/PR de `fix/fase-17-membership-alerts-dates` (no ejecutado en este cierre).

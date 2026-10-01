@@ -1376,6 +1376,8 @@ Ejecuta manualmente el job de alertas (mismo efecto que el cron). Rol: `admin`.
 
 **Validación 2026-10-01:** script `npm run audit:phase-17` (18/18 PASS) tras corrección DATE/UTC de umbrales.
 
+**F17-09 (manual, 2026-10-01):** campana Flutter Web PASS — badge 1, título `Membresía por vencer`, plan/días correctos; Run UI `#1 sent=1` / `#2 skipped=1`. Fase 17 **APROBADA Y CERRADA**.
+
 ---
 
 *Swagger interactivo: `GET /api/docs`*

@@ -547,6 +547,8 @@ npm run audit:phase-11
 
 ## Fase 17 — Alertas membresía por vencer
 
+**Estado global:** APROBADA Y CERRADA (2026-10-01) — rama `fix/fase-17-membership-alerts-dates` @ `c4c5adc`
+
 | Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
 |------|-----------------|--------------|----------|-------------------|-------------------|--------|
 | 17 | Backend | `npm run build` + lint + test | — | OK | OK (2026-10-01) | OK |
@@ -558,5 +560,15 @@ npm run audit:phase-11
 | 17 | Socio | Segundo run mismo día | — | sin duplicado (`skipped` > 0) | `sent=0 skipped=4` | OK |
 | 17 | Socio | Membresía vencida ayer + run | API | `membership.updated` + estado vencida | OK | OK |
 | 17 | Seguridad | Aislamiento A/B | `GET /notifications` | A no ve B | PASS | OK |
-| 17 | Flutter | Campana visual | UI | badge + listado | — | Pendiente manual |
-| 17 | Cron | Job 08:00 (prod) | scheduler | alertas automáticas | código revisado; no forzado en validación | Pendiente prod |
+| 17 | Flutter | Campana visual (F17-09) | UI | badge + listado | PASS manual 2026-10-01 (badge 1, título/contenido/plan/3 días/icono/hora; Run#1 sent=1; Run#2 skipped=1) | OK |
+| 17 | Cron | Job 08:00 (prod) | scheduler | alertas automáticas | código revisado; horario depende del servidor | OK (por diseño; no forzado en validación) |
+
+### Matriz F17 (cierre)
+
+| ID | Resultado |
+|----|-----------|
+| F17-01 … F17-08 | PASS |
+| F17-09 Campana Flutter | PASS (manual) |
+| F17-10 … F17-13 | PASS |
+| F17-D01 fechas DATE/UTC | PASS (corregido) |
+| F17-D02 await notifyMember | PASS (corregido) |
