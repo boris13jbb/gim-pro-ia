@@ -173,11 +173,11 @@ cd frontend-flutter
 flutter run -d windows
 ```
 
-**Web (Chrome):**
+**Web (Chrome) — puerto 8888 (Fase 18):**
 
 ```bash
 cd frontend-flutter
-flutter run -d chrome --web-port=8080
+flutter run -d chrome --web-port=8888
 ```
 
 **Android (emulador o dispositivo):**
@@ -195,27 +195,27 @@ cd frontend-flutter
 flutter run -d ios
 ```
 
-### 5.3 API en red local (dispositivo físico)
+### 5.3 API en red local / LAN (Fase 18 — sin ngrok)
 
-Reemplaza la IP por la de tu PC en la red:
+Flujo principal recomendado desde la raíz del repo:
+
+```powershell
+.\scripts\run-lan-dev.ps1
+.\scripts\run-android-physical.ps1 -PcIp <IP-LAN>
+.\scripts\build-apk-release.ps1 -ApiBaseUrl "http://<IP-LAN>:3000/api"
+```
+
+O manual (reemplaza `<IP-LAN>` por la IPv4 Wi-Fi del PC; no hardcodear en el repo):
 
 ```bash
 cd frontend-flutter
-flutter run --dart-define=API_BASE_URL=http://192.168.100.140:3000/api
-```
-
-Ejemplos por plataforma:
-
-```bash
-# Windows
-flutter run -d windows --dart-define=API_BASE_URL=http://192.168.100.140:3000/api
-
-# Chrome
-flutter run -d chrome --web-port=8080 --dart-define=API_BASE_URL=http://192.168.100.140:3000/api
-
+flutter run --dart-define=API_BASE_URL=http://<IP-LAN>:3000/api
+flutter run -d chrome --web-port=8888 --dart-define=API_BASE_URL=http://<IP-LAN>:3000/api
 # Android emulador (API en la misma máquina)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api
 ```
+
+ngrok queda **LEGACY** (`scripts/*ngrok*`). Cloudflare Tunnel opcional: `scripts/start-cloudflare-tunnel.ps1`.
 
 ### 5.4 URLs API por defecto (sin dart-define)
 
@@ -313,6 +313,8 @@ Equivalente desde `backend-nest/`:
 cd backend-nest
 npm run audit:phase-02
 # ... hasta audit:phase-11
+npm run audit:phase-17
+npm run audit:phase-18
 ```
 
 | Fase | Módulo |
@@ -327,6 +329,8 @@ npm run audit:phase-02
 | 09 | Facturación SRI |
 | 10 | App Flutter socios |
 | 11 | Asistente IA Gemini |
+| 17 | Alertas membresía |
+| 18 | Salida ngrok / LAN |
 
 ---
 
@@ -385,7 +389,7 @@ Copiar desde `backend-nest/.env.example` y configurar:
 | `PORT` | Puerto API (default `3000`) |
 | `DATABASE_URL` | MySQL/MariaDB — usar `127.0.0.1` en Windows |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Tokens JWT |
-| `CORS_ORIGINS` | Orígenes Flutter (incluir `:8080` para web) |
+| `CORS_ORIGINS` | Orígenes Flutter (Fase 18: incluir `:8888`; LAN RFC1918 auto en development) |
 | `GEMINI_API_KEY` | IA Fase 11 con Gemini (solo servidor, producción) |
 | `AI_PROVIDER` | `gemini` (default), `zai` (GLM-5.2) u `ollama` (pruebas locales) |
 | `ZAI_API_KEY` | API key de Z.AI (https://z.ai) cuando `AI_PROVIDER=zai` |

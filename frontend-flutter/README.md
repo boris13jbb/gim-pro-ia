@@ -15,31 +15,49 @@ cd frontend-flutter
 flutter pub get
 ```
 
-## Configuración API
+## Configuración API (Fase 18 — LAN primero)
 
-Por defecto:
+REST y WebSocket (`/events`, `/ai`) usan el **mismo host** vía `ApiConfig`
+(`API_BASE_URL` o `API_HOST`). No mezclar LAN + ngrok.
 
-| Plataforma | URL base |
+| Plataforma | Default |
 |------------|----------|
 | Windows / Web / iOS sim | `http://localhost:3000/api` |
 | Android emulador | `http://10.0.2.2:3000/api` |
+| Android / Web en LAN | `--dart-define=API_BASE_URL=http://IP-LAN:3000/api` |
 
-**Dispositivo físico Android:** `10.0.2.2` no funciona. Usa la IP de tu PC en la misma red Wi‑Fi:
+### Flujo principal: LAN (sin ngrok)
 
-```bash
-# Opción rápida (IP en dart_defines.physical_device.json)
-flutter run --dart-define-from-file=dart_defines.physical_device.json
+Desde la raíz del repo:
 
-# O desde la raíz del repo:
-..\scripts\run-android-physical.ps1
+```powershell
+# Detecta IP Wi‑Fi, verifica health e imprime comandos
+.\scripts\run-lan-dev.ps1
 
-# Manual:
-flutter run --dart-define=API_HOST=192.168.x.x
+# Backend (otra terminal si no está activo)
+cd backend-nest
+npm run start:dev
+
+# Flutter Web en :8888 contra API LAN
+.\scripts\run-lan-dev.ps1 -StartWeb
+
+# Android físico (misma Wi‑Fi)
+.\scripts\run-android-physical.ps1 -PcIp <IP-LAN>
+# o:
+cd frontend-flutter
+flutter run --dart-define=API_BASE_URL=http://<IP-LAN>:3000/api
 ```
 
-Verifica tu IP con `ipconfig` (IPv4 de Wi‑Fi). Teléfono y PC deben estar en la **misma red**.
+También válido:
 
-## Ejecutar
+```bash
+flutter run --dart-define=API_HOST=<IP-LAN>
+flutter run --dart-define-from-file=dart_defines.physical_device.json
+```
+
+`dart_defines.physical_device.json` es local (gitignored). Teléfono y PC en la **misma Wi‑Fi**.
+
+## Ejecutar (local puro)
 
 ```bash
 # Backend (otra terminal)
@@ -49,81 +67,47 @@ npm run start:dev
 # App
 cd frontend-flutter
 flutter run -d windows
-# o: flutter run -d chrome
+# o: flutter run -d chrome --web-port=8888
 # o: flutter run   (Android/iOS)
 ```
 
-## APK para compartir (ngrok)
-
-Para generar APKs livianas por arquitectura apuntando al túnel ngrok activo:
+## APK release sin ngrok (recomendado)
 
 ```powershell
-# Terminal 1: backend
+# Backend activo en LAN
 cd backend-nest
 npm run start:dev
 
-# Terminal 2: túnel público
-ngrok http 3000
-
-# Terminal 3: build APK (desde la raíz del repo)
-.\scripts\build-apk-ngrok.ps1
+# Desde la raíz — sustituye <IP-LAN>
+.\scripts\build-apk-release.ps1 -ApiBaseUrl "http://<IP-LAN>:3000/api"
 ```
 
 Salida en `apk-dist/`:
-- `IronGym-ngrok-arm64.apk` — celulares modernos (recomendada)
-- `IronGym-ngrok-arm32.apk` — celulares antiguos 32 bits
-- `IronGym-ngrok-x86_64.apk` — emulador Android en PC
+- `IronGym-lan-arm64.apk` — celulares modernos
+- `IronGym-lan-arm32.apk` — 32 bits
+- `IronGym-lan-x86_64.apk` — emulador
 
-Opciones:
+## Cloudflare Tunnel (opcional, URL estable)
+
+Requiere `cloudflared` + token creado en el dashboard (no se crea desde el repo):
 
 ```powershell
-.\scripts\build-apk-ngrok.ps1 -UniversalApk          # incluye APK universal (~71 MB)
-.\scripts\build-apk-ngrok.ps1 -ApiUrl "https://..."  # URL manual si ngrok no expone API local
-.\scripts\build-apk-ngrok.ps1 -SkipHealthCheck       # omite verificación de puerto/health
+$env:CLOUDFLARE_TUNNEL_TOKEN = '<token>'
+.\scripts\start-cloudflare-tunnel.ps1
+# Luego:
+flutter run --dart-define=API_BASE_URL=https://tu-hostname/api
 ```
 
-## Flutter Web con ngrok
+Sin token: el script reporta `PENDIENTE DE CONFIGURACIÓN EXTERNA`. LAN sigue siendo válido.
 
-### Desarrollo local (Chrome en tu PC, API por ngrok)
+## ngrok (LEGACY / opcional)
 
-```powershell
-.\scripts\web-ngrok.ps1
-```
-
-Abre `http://localhost:8080` y usa la API pública de ngrok.
-
-### Compartir web por internet (cualquier navegador)
+Solo si aún necesitas el flujo antiguo. Preferir LAN o Cloudflare Tunnel.
 
 ```powershell
-# Terminal 1 — Backend
-cd backend-nest
-npm run start:dev
-
-# Terminal 2 — Túneles API (3000) + Web (8080)
 .\scripts\start-ngrok-gym.ps1
-
-# Terminal 3 — Build + servidor web local
-.\scripts\web-ngrok.ps1 -Mode Share
-```
-
-Luego:
-1. Reinicia el backend si el script actualizó `CORS_ORIGINS`.
-2. Abre la URL **web** que muestra ngrok (puerto 8080).
-3. La API pública es la URL **api** de ngrok (puerto 3000).
-
-Salida estática en `web-dist/` si necesitas desplegar en otro hosting.
-
-### Comando manual (sin script)
-
-```powershell
-cd frontend-flutter
-flutter run -d chrome --web-port=8080 --dart-define=API_BASE_URL=https://TU-URL.ngrok-free.app/api
-```
-
-Build para producción:
-
-```powershell
-flutter build web --dart-define=API_BASE_URL=https://TU-URL.ngrok-free.app/api
+.\scripts\build-apk-ngrok.ps1
+.\scripts\web-ngrok.ps1
 ```
 
 ## Funcionalidades (Fases 10–11 — Socios)

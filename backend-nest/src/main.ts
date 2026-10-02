@@ -53,8 +53,9 @@ async function bootstrap() {
   );
 
   // CORS controlado por env (string CSV).
-  // En development también acepta túneles ngrok y localhost en cualquier puerto
-  // (Flutter web cambia de puerto según disponibilidad en Windows).
+  // Fase 18: flujo principal = LAN (localhost + IPv4 privadas en development).
+  // ngrok sigue permitido solo en development como LEGACY/opcional.
+  // Ver backend-nest/src/config/cors.config.ts
   const corsOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((s) => s.trim())

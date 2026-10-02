@@ -1,9 +1,12 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Genera APKs Android (split por arquitectura) apuntando a la URL pública de ngrok.
+    [LEGACY / OPCIONAL] Genera APKs Android apuntando a la URL pública de ngrok.
 
 .DESCRIPTION
+    Fase 18: preferir `scripts/build-apk-release.ps1 -ApiBaseUrl http://IP-LAN:3000/api`
+    (sin ngrok). Este script se conserva como fallback cuando aún uses ngrok.
+
     1. Lee la URL HTTPS activa desde la API local de ngrok (http://127.0.0.1:4040).
     2. Verifica que el backend NestJS escuche en el puerto 3000.
     3. Compila APKs release con --split-per-abi.

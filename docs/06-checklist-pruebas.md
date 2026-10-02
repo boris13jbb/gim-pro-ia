@@ -572,3 +572,27 @@ npm run audit:phase-11
 | F17-10 … F17-13 | PASS |
 | F17-D01 fechas DATE/UTC | PASS (corregido) |
 | F17-D02 await notifyMember | PASS (corregido) |
+
+## Fase 18 — Salida de ngrok (LAN)
+
+**Estado global:** READY FOR REVIEW — rama `feature/fase-18-salir-ngrok` (commit pendiente de autorización)
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|------|-----------------|--------------|----------|-------------------|-------------------|--------|
+| 18 | Script | `.\scripts\run-lan-dev.ps1` | — | Detecta IP + health LAN | IP `192.168.100.140` + health 200 | OK |
+| 18 | API | Health localhost | `GET /api/health` | 200 | 200 | OK |
+| 18 | API | Health LAN | `GET http://IP:3000/api/health` | 200 | 200 | OK |
+| 18 | API | CORS Origin LAN `:8888` | header ACAO | origen LAN permitido | `allow-origin=http://IP:8888` | OK |
+| 18 | Backend | Jest CORS | `cors.config.spec` | 5 tests | 5/5 PASS | OK |
+| 18 | Backend | `npm run build` | — | OK | OK | OK |
+| 18 | Backend | `npm run audit:phase-18` | — | PASS | 6/6 (login SKIP) | OK |
+| 18 | Flutter | `ApiConfig` REST=WS host | — | mismo host | Por diseño | OK (por diseño) |
+| 18 | Scripts | ngrok marcado LEGACY | — | no flujo principal | Documentado | OK |
+| 18 | Tunnel | `start-cloudflare-tunnel.ps1` sin token | — | PENDIENTE CONFIG EXTERNA | exit 2; cloudflared OK | OK (esperado) |
+| 18 | Socio | Login por LAN | `POST /auth/member/login` | 200 + tokens | — | Pendiente manual |
+| 18 | Flutter Web | Chrome `:8888` LAN | UI | login/home | — | Pendiente manual |
+| 18 | Android | App física LAN | UI | login/home | — | Pendiente manual |
+| 18 | WS | `/events` por LAN | handshake JWT | conecta | — | Pendiente manual |
+| 18 | WS | `/ai` por LAN | chat | turno texto | — | Pendiente manual |
+| 18 | F17 | Notificación/campana | `/events` + API | sin regresión | Sin cambios F17; smoke pendiente | Pendiente manual |
+| 18 | Docs | `PLAN-SALIR-DE-NGROK.md` | — | permanece `??` | `??` | OK |

@@ -2,6 +2,63 @@
 
 ---
 
+## 2026-10-01 — Fase 18: salida de ngrok (flujo LAN)
+
+### Cambio realizado
+Implementación del flujo principal de desarrollo por LAN (sin ngrok obligatorio): CORS con orígenes LAN en development, scripts `run-lan-dev` / `build-apk-release` / `start-cloudflare-tunnel`, marcado LEGACY de scripts ngrok, `ApiConfig` unificado REST+WS, validación `audit:phase-18`, documentación de fase.
+
+### Archivos creados
+- `scripts/run-lan-dev.ps1`
+- `scripts/build-apk-release.ps1`
+- `scripts/start-cloudflare-tunnel.ps1`
+- `backend-nest/scripts/validate-phase-18.mjs`
+- `backend-nest/src/config/cors.config.spec.ts`
+- `docs/fases/fase-18-salida-ngrok.md`
+
+### Archivos modificados
+- `backend-nest/src/config/cors.config.ts`
+- `backend-nest/src/main.ts`
+- `backend-nest/.env.example`
+- `backend-nest/package.json`
+- `frontend-flutter/lib/core/config/api_config.dart`
+- `frontend-flutter/lib/services/api_client.dart`
+- `frontend-flutter/README.md`
+- `scripts/start-ngrok-gym.ps1`, `web-ngrok.ps1`, `build-apk-ngrok.ps1`, `ngrok-gym.yml` (LEGACY)
+- `docs/05-bitacora-migracion.md`, `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Acceso API/Web/Android por LAN; CORS development; builds APK sin ngrok.
+
+### Código reutilizado
+`ApiConfig`, `run-android-physical.ps1`, bind `0.0.0.0` existente, scripts ngrok conservados.
+
+### Duplicados revisados
+No se duplicó lógica de `ApiConfig`; APK release nuevo separado del ngrok LEGACY.
+
+### Pruebas realizadas
+- `npx jest --testPathPatterns=cors.config.spec` → 5/5 PASS
+- `npm run build` → OK
+- `npm run audit:phase-18` → 6/6 PASS (login SKIP sin credenciales de entorno)
+- `.\scripts\run-lan-dev.ps1` → IP LAN + health 200 localhost y LAN
+- Cloudflare Tunnel sin token → exit 2 PENDIENTE CONFIG EXTERNA (cloudflared instalado)
+
+### Resultado
+Pendiente de revisión humana (READY FOR REVIEW). Commit/push/PR no ejecutados.
+
+### Riesgos detectados
+Login/Web/Android/WS/F17 manual pendientes; Tunnel requiere token externo; firewall Windows.
+
+### Rollback
+Descartar cambios de la rama `feature/fase-18-salir-ngrok`.
+
+### Próximo paso
+Usuario revisa informe, autoriza commit. Luego validación manual Flutter Web/Android/WS.
+
+### Nota
+`docs/PLAN-SALIR-DE-NGROK.md` permanece **untracked** (no stageado).
+
+---
+
 ## 2026-03-31 — Plan: salir de dependencia de ngrok
 
 ### Cambio realizado

@@ -1,6 +1,7 @@
 version: "3"
 
-# Túneles para compartir Iron Gym (API + Flutter Web).
+# [LEGACY / OPCIONAL] Túneles ngrok para Iron Gym (API + Flutter Web).
+# Fase 18: preferir LAN (`scripts/run-lan-dev.ps1`) o Cloudflare Tunnel.
 #
 # IMPORTANTE: este archivo NO incluye authtoken (no va al repo).
 # Usa el script que combina configs:

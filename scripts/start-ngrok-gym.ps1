@@ -1,11 +1,18 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Inicia túneles ngrok para Iron Gym (API :3000 + Web :8888).
+    [LEGACY / OPCIONAL] Inicia túneles ngrok para Iron Gym (API :3000 + Web :8888).
 
 .DESCRIPTION
+    Fase 18: el flujo principal de desarrollo es LAN (`scripts/run-lan-dev.ps1`).
+    Este script se mantiene solo como fallback de emergencia / demos legacy.
+
     Combina tu ngrok.yml global (authtoken) con scripts/ngrok-gym.yml (túneles).
     Sin esto, ngrok falla con ERR_NGROK_4018 si solo usas el yml del proyecto.
+
+    Preferido:
+      .\scripts\run-lan-dev.ps1
+      .\scripts\start-cloudflare-tunnel.ps1   # URL estable (si hay token)
 
 .EXAMPLE
     .\scripts\start-ngrok-gym.ps1

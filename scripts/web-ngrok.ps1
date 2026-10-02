@@ -1,12 +1,15 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Ejecuta o publica Flutter Web apuntando a la API pública de ngrok.
+    [LEGACY / OPCIONAL] Ejecuta o publica Flutter Web apuntando a API ngrok.
 
 .DESCRIPTION
+    Fase 18: flujo principal = LAN (`scripts/run-lan-dev.ps1 -StartWeb`, puerto 8888).
+    Este script se mantiene como fallback ngrok.
+
     Modos:
-      Run   — Desarrollo local en Chrome (puerto 8080) contra API ngrok.
-      Share — Compila web, sirve build/web en :8080 y muestra URLs para compartir.
+      Run   — Desarrollo local en Chrome contra API ngrok.
+      Share — Compila web, sirve build/web y muestra URLs para compartir.
 
 .PARAMETER Mode
     Run (default) o Share.

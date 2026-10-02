@@ -27,6 +27,7 @@ class ApiClient {
             sendTimeout: const Duration(seconds: 15),
             headers: {
               'Content-Type': 'application/json',
+              // LEGACY: solo si la URL aún apunta a ngrok (Fase 18 flujo principal = LAN).
               if (ApiConfig.baseUrl.contains('ngrok'))
                 'ngrok-skip-browser-warning': 'true',
             },
