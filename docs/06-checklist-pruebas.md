@@ -596,3 +596,21 @@ npm run audit:phase-11
 | 18 | WS | `/ai` por LAN | chat | turno texto | — | Pendiente manual |
 | 18 | F17 | Notificación/campana | `/events` + API | sin regresión | Sin cambios F17; smoke pendiente | Pendiente manual |
 | 18 | Docs | `PLAN-SALIR-DE-NGROK.md` | — | permanece `??` | `??` | OK |
+
+### SAAS-02 — Fundaciones
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|
+| SAAS-02 | Prisma | `npx prisma validate` | — | válido | válido | OK |
+| SAAS-02 | Migraciones | `npm run db:validate-migrations` | — | baseline aplica sobre base vacía, sin drift inesperado | 23 tablas, 21 FK, 5 únicos; 1 diferencia equivalente aceptada | OK |
+| SAAS-02 | Migraciones | Drift solo lectura contra la BD real | — | solo `sri_ambiente` | solo `sri_ambiente` | OK |
+| SAAS-02 | Backup | `npm run db:backup:rehearsal` | — | PASS (filas y checksums iguales) | PASS | OK |
+| SAAS-02 | Restore | Guarda de nombre (`assertDisposableName`) | — | rechaza nombres sin `gim_test_` | rechaza | OK |
+| SAAS-02 | Harness | `npm run test:integration` | — | 5/5 | 5/5 | OK |
+| SAAS-02 | Backend | `npx jest` | — | sin regresión | 6/6 | OK |
+| SAAS-02 | Backend | `npm run test:e2e` (base desechable) | `GET /api/health` y otros | sin regresión | 2/2 | OK |
+| SAAS-02 | Backend | `npm run build` | — | OK | OK | OK |
+| SAAS-02 | Backend | ESLint sin `--fix` | — | sin problemas nuevos | 1 error y 3 warnings preexistentes | OK (preexistente) |
+| SAAS-02 | CI | `backend-ci.yml` parseo YAML | — | válido, sin secretos ni deploy | válido | OK |
+| SAAS-02 | CI | Ejecución en GitHub | — | verde | — | Pendiente (requiere push) |
+| SAAS-02 | Limpieza | `SHOW DATABASES LIKE 'gim\_test\_%'` | — | vacío | vacío | OK |

@@ -62,6 +62,22 @@ npm run db:generate
 
 3. Valida conectividad con `GET /api/health` (`database.status` debe ser `up`).
 
+### Migraciones, backup y harness MySQL (SAAS-02)
+
+Requieren `TEST_DATABASE_URL` (servidor MySQL **sin** nombre de base, p. ej. `mysql://root:@127.0.0.1:3306`).
+Los scripts solo crean/eliminan bases con prefijo `gim_test_` y nunca usan `DATABASE_URL`.
+
+```bash
+npm run db:validate-migrations   # baseline sobre base vacía + drift + tablas/FK/únicos
+npm run test:integration         # Jest + Prisma real contra base desechable
+npm run db:backup:rehearsal      # backup -> restore -> comparación (requiere mysqldump/mysql)
+npm run db:backup                # BACKUP_DATABASE_URL obligatorio; salida en backups/ (ignorado por Git)
+npm run db:restore:test -- --file <dump.sql>   # restaura SOLO en una base gim_test_*
+```
+
+En Windows/XAMPP: `MYSQLDUMP_PATH=C:\xampp\mysql\bin\mysqldump.exe` y `MYSQL_CLIENT_PATH=C:\xampp\mysql\bin\mysql.exe`.
+Detalle completo: `docs/SAAS-02-FUNDACIONES.md`.
+
 ## Estado del proyecto
 
 | Fase | Módulo | Estado |

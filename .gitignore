@@ -49,3 +49,6 @@ frontend-flutter/dart_defines.physical_device.json
 
 # Prisma
 backend-nest/generated/
+
+# Backups de base de datos (contienen datos personales; nunca versionar)
+backend-nest/backups/

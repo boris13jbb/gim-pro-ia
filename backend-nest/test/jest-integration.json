@@ -1,0 +1,12 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".int-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "globalSetup": "<rootDir>/integration/global-setup.mjs",
+  "globalTeardown": "<rootDir>/integration/global-teardown.mjs",
+  "testTimeout": 60000
+}

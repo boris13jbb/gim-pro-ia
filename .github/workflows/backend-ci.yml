@@ -1,0 +1,97 @@
+# CI mínimo del backend (SAAS-02).
+# Solo VALIDA: no despliega, no usa secretos del repositorio y no se conecta
+# a ninguna base real. La única base es un contenedor MariaDB efímero que
+# GitHub destruye al terminar el job.
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - 'backend-nest/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend-nest/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend-nest
+
+    services:
+      mariadb:
+        # Misma versión mayor/menor que el entorno local (XAMPP MariaDB 10.4).
+        image: mariadb:10.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MARIADB_DATABASE: gim_test_ci_e2e
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      NODE_ENV: test
+      PRISMA_HIDE_UPDATE_MESSAGE: 'true'
+      # Servidor efímero del job: los scripts crean y eliminan bases gim_test_*.
+      TEST_DATABASE_URL: mysql://root:@127.0.0.1:3306
+      # Solo la usan prisma validate y el e2e; apunta a la base desechable del contenedor.
+      DATABASE_URL: mysql://root:@127.0.0.1:3306/gim_test_ci_e2e
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend-nest/package-lock.json
+
+      - name: Install dependencies (incluye prisma generate vía postinstall)
+        run: npm ci
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Build
+        run: npm run build
+
+      # El repositorio tiene 1 error de formato preexistente (src/config/cors.config.ts, CRLF).
+      # Se informa sin bloquear hasta corregirlo en una fase que permita tocar ese archivo.
+      - name: Lint (no bloqueante, sin --fix)
+        continue-on-error: true
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      - name: Validate migrations on disposable database
+        run: npm run db:validate-migrations
+
+      - name: Integration tests (MySQL harness)
+        run: npm run test:integration -- --ci
+
+      - name: Generate ephemeral JWT secrets for e2e
+        run: |
+          echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
+      - name: Apply baseline to e2e database
+        run: npx prisma migrate deploy
+
+      - name: E2E tests
+        run: npm run test:e2e -- --ci --forceExit

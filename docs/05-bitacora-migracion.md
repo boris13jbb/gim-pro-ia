@@ -2827,3 +2827,65 @@ Revertir commit documental de cierre + commit `c4c5adc` si se necesita deshacer 
 
 ### Próximo paso
 A criterio del usuario: merge/PR de `fix/fase-17-membership-alerts-dates` (no ejecutado en este cierre).
+
+---
+
+## 2026-10-06 — SAAS-02: Fundaciones (migraciones, backup, harness MySQL, CI)
+
+### Cambio realizado
+Baseline de migraciones Prisma del esquema actual, scripts de backup/restore con restore limitado a bases `gim_test_*`, ensayo de backup, harness Jest de integración con MySQL efímero, validación de migraciones sobre base vacía y CI mínimo solo de validación. Sin multi-tenancy ni cambios funcionales.
+
+### Archivos creados
+- `backend-nest/prisma/migrations/0001_baseline_current_schema/migration.sql`
+- `backend-nest/prisma/migrations/migration_lock.toml`
+- `backend-nest/scripts/lib/disposable-database.mjs`
+- `backend-nest/scripts/validate-migrations.mjs`
+- `backend-nest/scripts/db-backup.mjs`
+- `backend-nest/scripts/db-restore.mjs`
+- `backend-nest/scripts/db-backup-rehearsal.mjs`
+- `backend-nest/test/jest-integration.json`
+- `backend-nest/test/integration/global-setup.mjs`
+- `backend-nest/test/integration/global-teardown.mjs`
+- `backend-nest/test/integration/database-baseline.int-spec.ts`
+- `.github/workflows/backend-ci.yml`
+- `docs/SAAS-02-FUNDACIONES.md`
+
+### Archivos modificados
+- `backend-nest/package.json` (solo 5 scripts nuevos)
+- `.gitignore` (`backend-nest/backups/`)
+- `backend-nest/README.md` (sección de comandos SAAS-02)
+- `docs/05-bitacora-migracion.md`, `docs/06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Ninguna funcionalidad de negocio. Solo tooling de BD, pruebas y CI.
+
+### Código reutilizado
+`DatabaseModule`/`PrismaService`/`PrismaHealthIndicator` reales en el harness; CLI de Prisma del proyecto; una sola librería común (`disposable-database.mjs`) para todos los scripts.
+
+### Duplicados revisados
+Se eliminó `buildRestoredUrl` (duplicaba `buildDatabaseUrl`). Sin documentos duplicados (`docs/SAAS-02-FUNDACIONES.md` es nuevo y único).
+
+### Comentarios agregados en el código
+Guardas de seguridad (prefijo `gim_test_`, no usar `DATABASE_URL`, no sobrescribir), contraseña vía `MYSQL_PWD` y allowlist de drift.
+
+### Pruebas realizadas
+- `db:validate-migrations` OK (23 tablas, 21 FK, 5 únicos)
+- `db:backup:rehearsal` PASS
+- `test:integration` 5/5
+- unitarios 6/6
+- e2e 2/2 sobre base desechable
+- build OK
+- lint: 1 error y 3 warnings preexistentes
+- workflow parseado con `js-yaml`
+
+### Resultado
+Pendiente de aprobación del usuario.
+
+### Riesgos detectados
+El baseline no está marcado como aplicado en `ec_gym_system`: no ejecutar `migrate deploy` allí hasta `migrate resolve --applied` con backup previo. El CI no se ha ejecutado en GitHub. Diferencia equivalente en `sri_ambiente`, diferida.
+
+### Rollback
+Eliminar los archivos creados y revertir los scripts de `package.json`, la línea de `.gitignore` y la sección del README. No hubo cambios en ninguna BD existente.
+
+### Próximo paso
+Aprobación de SAAS-02 y decisión D1 de SAAS-01 antes de SAAS-03.
