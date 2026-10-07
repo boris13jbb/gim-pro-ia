@@ -33,7 +33,8 @@ export class AttendanceService {
    * Busca socio por DNI y calcula si puede ingresar sin persistir asistencia.
    */
   async validateAccessByDni(dni: string): Promise<AttendanceAccessPreview> {
-    const member = await this.prisma.socios.findUnique({
+    // dni es único por tenant (SAAS-03); hasta que SAAS-04 filtre por tenant hay uno solo.
+    const member = await this.prisma.socios.findFirst({
       where: { dni: dni.trim() },
     });
 

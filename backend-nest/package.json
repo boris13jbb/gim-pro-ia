@@ -23,6 +23,7 @@
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore:test": "node scripts/db-restore.mjs",
     "db:backup:rehearsal": "node scripts/db-backup-rehearsal.mjs",
+    "db:tenant:rehearsal": "node scripts/tenant-migration-rehearsal.mjs",
     "db:import-legacy": "node scripts/import-legacy-db.mjs",
     "db:pull": "prisma db pull",
     "db:push": "prisma db push",

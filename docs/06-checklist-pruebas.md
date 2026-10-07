@@ -614,3 +614,30 @@ npm run audit:phase-11
 | SAAS-02 | CI | `backend-ci.yml` parseo YAML | — | válido, sin secretos ni deploy | válido | OK |
 | SAAS-02 | CI | Ejecución en GitHub | — | verde | — | Pendiente (requiere push) |
 | SAAS-02 | Limpieza | `SHOW DATABASES LIKE 'gim\_test\_%'` | — | vacío | vacío | OK |
+
+### SAAS-03 — Fundación multi-tenant de la base de datos
+
+| Fase | Pantalla/Módulo | Botón/Acción | Endpoint | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|
+| SAAS-03 | Prisma | `npx prisma validate` + `prisma generate` | — | válido | válido | OK |
+| SAAS-03 | Migraciones | `npm run db:validate-migrations` | — | 0001 + 0002 en base vacía, sin drift inesperado, 0 tenants | 25 tablas, 44 FK, 16 únicos, 42 triggers; solo `sri_ambiente` | OK |
+| SAAS-03 | Inmutabilidad | `UPDATE tenant_id` A→B en las 21 tablas (casos A–F) | — | rechazado; filas conservan tenant A | 26/26 integración (incluye A–F) | OK |
+| SAAS-03 | Inmutabilidad | UPDATE de otras columnas (socios, planes, productos, ventas, comprobantes) | — | permitido | PASS | OK |
+| SAAS-03 | Fail-closed | tenant_id inexistente (raíz e hijo) | — | rechazado | PASS | OK |
+| SAAS-03 | Triggers | conteo post-0002 | — | 42 (21 BI + 21 BU) | 42 | OK |
+| SAAS-03 | Backfill | `npm run db:tenant:rehearsal` (fixtures) | — | filas preservadas, 1 tenant, memberships = usuarios, 0 violaciones | PASS | OK |
+| SAAS-03 | Backfill | `npm run db:tenant:rehearsal -- --from-backup` (copia real) | — | ídem sobre datos reales | PASS (588 filas, 23 memberships) | OK |
+| SAAS-03 | Fail-fast | Escenario negativo (2 filas `configuracion`) | — | preflight bloquea y el guard aborta el deploy | bloquea y aborta | OK |
+| SAAS-03 | Compatibilidad | Insert legado sin `tenant_id` (1 tenant) | — | raíz → tenant inicial; hijo → tenant del padre | OK | OK |
+| SAAS-03 | Backup | `npm run db:backup:rehearsal` | — | PASS con triggers | PASS | OK |
+| SAAS-03 | Integridad | `npm run test:integration` (pruebas 1–10 + A/B) | — | 17/17 | 17/17 | OK |
+| SAAS-03 | A/B | Mismo `dni` en tenants A y B / duplicado en A | — | permitido / rechazado | permitido / rechazado | OK |
+| SAAS-03 | A/B | FK cruzada (`asistencias`, `productos`, `suscripciones`) | — | rechazada | rechazada | OK |
+| SAAS-03 | Backend | `npx jest` | — | sin regresión | 6/6 | OK |
+| SAAS-03 | Backend | `npm run test:e2e` (base desechable 0001 + 0002) | `GET /api`, `GET /api/health` | sin regresión | 2/2 | OK |
+| SAAS-03 | Backend | `npm run build` | — | OK | OK | OK |
+| SAAS-03 | Backend | ESLint sin `--fix` | — | sin problemas nuevos | 1 error y 3 warnings preexistentes | OK (preexistente) |
+| SAAS-03 | Seguridad | `ec_gym_system` (solo lectura en `information_schema`) | — | sin `tenants`, sin `tenant_id`, sin triggers | intacta | OK |
+| SAAS-03 | CI | Ejecución en GitHub con el paso multi-tenant | — | verde | — | Pendiente (requiere push) |
+| SAAS-03 | Login/asistencia | Login de socio por DNI y validación de acceso por DNI (manual) | `POST /api/auth/member/login`, `POST /api/attendance/validate`, `POST /api/attendance/scan` | sin cambios | — | Pendiente manual |
+| SAAS-03 | Limpieza | Bases `gim_test_%` | — | ninguna | ninguna | OK |

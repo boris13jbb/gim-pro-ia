@@ -8,6 +8,8 @@
  *   [MYSQLDUMP_PATH=mysqldump] [MYSQL_CLIENT_PATH=mysql] \
  *   node scripts/db-backup-rehearsal.mjs [--keep]
  *
+ * Desde SAAS-03 también compara los triggers de tenant (mysqldump --triggers).
+ *
  * Los datos insertados son FIXTURES de ensayo (no datos reales) y viven solo en
  * la base gim_test_* de origen, que se elimina al final junto con la restaurada
  * y el archivo de backup temporal (salvo --keep).
@@ -27,38 +29,19 @@ import {
   runPrisma,
   withConnection,
 } from './lib/disposable-database.mjs';
+import { seedLegacyFixtures } from './lib/legacy-fixtures.mjs';
+import { generateUlid } from './lib/tenant-scope.mjs';
 
-/** Fixtures mínimas que recorren las FK principales (POS, membresías, auth). */
+/**
+ * Esquema completo (multi-tenant) + un único tenant de ensayo: los fixtures sin
+ * tenant_id se asignan a él vía triggers (modo legado), como hará la app actual.
+ */
 async function seedRehearsalData(serverUrl, database) {
   await withConnection(serverUrl, database, async (conn) => {
-    await conn.query(
-      "INSERT INTO configuracion (id, nombre_sistema, nombre_comercial, moneda) VALUES (1, 'Ensayo', 'Gym Ensayo', '$')",
-    );
-    await conn.query(
-      "INSERT INTO usuarios (id, nombre, email, password, rol, estado) VALUES (1, 'Staff Ensayo', 'staff.ensayo@gim-test.local', 'hash-no-valido', 'admin', 'activo')",
-    );
-    await conn.query(
-      "INSERT INTO socios (id, nombre, dni, email, estado) VALUES (1, 'Socio Uno', 'T0000001', 'uno@gim-test.local', 'activo'), (2, 'Socio Dos', 'T0000002', NULL, 'activo')",
-    );
-    await conn.query(
-      "INSERT INTO planes (id, nombre, precio, duracion_dias, estado) VALUES (1, 'Mensual ensayo', 30.00, 30, 'activo')",
-    );
-    await conn.query(
-      "INSERT INTO suscripciones (id, socio_id, plan_id, fecha_inicio, fecha_fin, estado) VALUES (1, 1, 1, '2026-01-01', '2026-01-31', 'vencida')",
-    );
-    await conn.query("INSERT INTO categorias (id, nombre, estado) VALUES (1, 'Bebidas', 'activo')");
-    await conn.query(
-      "INSERT INTO productos (id, categoria_id, nombre, precio_compra, precio_venta, stock, estado) VALUES (1, 1, 'Agua ensayo', 0.50, 1.00, 10, 'activo')",
-    );
-    await conn.query("INSERT INTO cajas (id, usuario_id, monto_inicial, estado) VALUES (1, 1, 20.00, 'abierta')");
-    await conn.query("INSERT INTO ventas (id, caja_id, socio_id, total) VALUES (1, 1, 1, 2.00)");
-    await conn.query(
-      'INSERT INTO detalle_ventas (id, venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (1, 1, 1, 2, 1.00, 2.00)',
-    );
-    await conn.query("INSERT INTO asistencias (id, socio_id, metodo_ingreso) VALUES (1, 1, 'manual')");
-    await conn.query(
-      "INSERT INTO notifications (id, member_id, type, title, body) VALUES (1, 1, 'rehearsal', 'Ensayo', 'Notificación de ensayo')",
-    );
+    await conn.query("INSERT INTO tenants (public_id, slug, name) VALUES (?, 'ensayo-backup', 'Gym Ensayo')", [
+      generateUlid(),
+    ]);
+    await seedLegacyFixtures(conn);
   });
 }
 
@@ -113,6 +96,7 @@ async function main() {
     compare('lista de tablas', sourceSummary.tables, restored.summary.tables, failures);
     compare('foreign keys', sourceSummary.foreignKeys, restored.summary.foreignKeys, failures);
     compare('índices únicos', sourceSummary.uniqueIndexes, restored.summary.uniqueIndexes, failures);
+    compare('triggers', sourceSummary.triggers, restored.summary.triggers, failures);
     compare('filas por tabla', sourceSummary.rowCounts, restored.summary.rowCounts, failures);
     compare(
       'CHECKSUM TABLE por tabla',

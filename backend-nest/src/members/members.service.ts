@@ -123,7 +123,8 @@ export class MembersService {
     const normalized = login.trim();
     const member = normalized.includes('@')
       ? await this.prisma.socios.findFirst({ where: { email: normalized } })
-      : await this.prisma.socios.findUnique({ where: { dni: normalized } });
+      : // dni es único por tenant (SAAS-03); hasta que SAAS-04 filtre por tenant hay uno solo.
+        await this.prisma.socios.findFirst({ where: { dni: normalized } });
 
     if (!member?.password) {
       return { kind: 'invalid' as const };
@@ -286,7 +287,7 @@ export class MembersService {
   }
 
   private async ensureUniqueDni(dni: string, excludeId?: number) {
-    const existing = await this.prisma.socios.findUnique({ where: { dni } });
+    const existing = await this.prisma.socios.findFirst({ where: { dni } });
     if (existing && existing.id !== excludeId) {
       throw new ConflictException('Ya existe un socio con ese DNI');
     }

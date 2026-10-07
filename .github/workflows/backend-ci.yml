@@ -1,4 +1,4 @@
-# CI mínimo del backend (SAAS-02).
+# CI mínimo del backend (SAAS-02, ampliado en SAAS-03 con el ensayo multi-tenant).
 # Solo VALIDA: no despliega, no usa secretos del repositorio y no se conecta
 # a ninguna base real. La única base es un contenedor MariaDB efímero que
 # GitHub destruye al terminar el job.
@@ -82,6 +82,11 @@ jobs:
       - name: Validate migrations on disposable database
         run: npm run db:validate-migrations
 
+      # SAAS-03: baseline legado + fixtures → 0002 → backfill, integridad tenant,
+      # drift, triggers y escenario negativo fail-fast (bases gim_test_* efímeras).
+      - name: Multi-tenant migration rehearsal (backfill + integrity)
+        run: npm run db:tenant:rehearsal
+
       - name: Integration tests (MySQL harness)
         run: npm run test:integration -- --ci
 
@@ -90,7 +95,7 @@ jobs:
           echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
           echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
-      - name: Apply baseline to e2e database
+      - name: Apply migrations (0001 + 0002) to e2e database
         run: npx prisma migrate deploy
 
       - name: E2E tests

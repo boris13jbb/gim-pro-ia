@@ -78,6 +78,18 @@ npm run db:restore:test -- --file <dump.sql>   # restaura SOLO en una base gim_t
 En Windows/XAMPP: `MYSQLDUMP_PATH=C:\xampp\mysql\bin\mysqldump.exe` y `MYSQL_CLIENT_PATH=C:\xampp\mysql\bin\mysql.exe`.
 Detalle completo: `docs/SAAS-02-FUNDACIONES.md`.
 
+### Fundación multi-tenant (SAAS-03)
+
+La migración `0002_multi_tenant_foundation` añade `tenants`, `tenant_memberships` y `tenant_id` en las tablas de negocio.
+**No está aplicada en `ec_gym_system`**: en producción seguir `docs/SAAS-03-PRODUCTION-MIGRATION-RUNBOOK.md`.
+
+```bash
+npm run db:tenant:rehearsal                   # baseline legado + fixtures -> 0002 -> integridad (usado en CI)
+npm run db:tenant:rehearsal -- --from-backup  # igual, sobre una copia de BACKUP_DATABASE_URL (solo lectura)
+```
+
+Detalle: `docs/SAAS-03-MULTI-TENANT-DB.md`.
+
 ## Estado del proyecto
 
 | Fase | Módulo | Estado |

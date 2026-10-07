@@ -1,8 +1,9 @@
 /**
- * SAAS-02 — Utilidades para bases MySQL/MariaDB DESECHABLES.
+ * SAAS-02/03 — Utilidades para bases MySQL/MariaDB DESECHABLES.
  *
- * Usado por: validación de migraciones, harness de integración (Jest) y
- * rehearsal de backup/restore. Nunca se usa contra la base de la aplicación.
+ * Usado por: validación de migraciones, harness de integración (Jest), rehearsal de
+ * backup/restore y rehearsal de la migración multi-tenant. Nunca se usa contra la
+ * base de la aplicación.
  *
  * Seguridad:
  * - El servidor se toma de TEST_DATABASE_URL (nunca de DATABASE_URL), para que un
@@ -23,6 +24,10 @@ export const BACKEND_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 
 export const DISPOSABLE_DB_PREFIX = 'gim_test_';
 
 const DISPOSABLE_NAME_PATTERN = /^gim_test_[a-z0-9_]{1,55}$/;
+// Segunda barrera (SAAS-03): aunque el prefijo coincida, nombres que aludan a la base
+// real o a producción se rechazan. No sustituye a TEST_DATABASE_URL: ambas se exigen.
+const PRODUCTION_NAME_PATTERN = /ec_gym_system|prod/i;
+export const BASELINE_MIGRATION = '0001_baseline_current_schema';
 
 /**
  * Lee la URL del servidor de pruebas (`mysql://user:pass@host:port`).
@@ -43,11 +48,18 @@ export function getTestServerUrl(envName = 'TEST_DATABASE_URL') {
 }
 
 export function assertDisposableName(name) {
-  if (!DISPOSABLE_NAME_PATTERN.test(name)) {
+  if (!DISPOSABLE_NAME_PATTERN.test(name) || PRODUCTION_NAME_PATTERN.test(name)) {
     throw new Error(
       `Nombre de base rechazado: "${name}". Solo se permiten bases desechables con prefijo ${DISPOSABLE_DB_PREFIX}.`,
     );
   }
+}
+
+/** Extrae el nombre de base de una URL mysql:// y exige que sea desechable. */
+export function assertDisposableUrl(databaseUrl) {
+  const name = decodeURIComponent(new URL(databaseUrl).pathname.replace(/^\//, ''));
+  assertDisposableName(name);
+  return name;
 }
 
 /** Nombre único: gim_test_<label>_<yyyymmddhhmmss>_<hex>. */
@@ -113,8 +125,11 @@ export async function dropDisposableDatabase(serverUrl, name) {
  * Ejecuta la CLI de Prisma con DATABASE_URL sobrescrita hacia la base desechable.
  * prisma.config.ts carga .env con dotenv, que NO sobrescribe variables ya
  * definidas en el proceso; por eso la base real de .env no se usa aquí.
+ * La URL debe apuntar a una base gim_test_*: así ningún `migrate deploy/resolve`
+ * ni `db execute` lanzado desde estos scripts puede alcanzar ec_gym_system.
  */
 export function runPrisma(args, databaseUrl) {
+  assertDisposableUrl(databaseUrl);
   const prismaCli = join(BACKEND_ROOT, 'node_modules', 'prisma', 'build', 'index.js');
   const result = spawnSync(process.execPath, [prismaCli, ...args], {
     cwd: BACKEND_ROOT,
@@ -136,6 +151,26 @@ export function applyMigrations(databaseUrl) {
 }
 
 /**
+ * Deja la base como una instalación legada previa a SAAS-03: ejecuta solo el SQL del
+ * baseline (sin historial de Prisma), igual que ec_gym_system hoy.
+ */
+export function applyBaselineSqlOnly(databaseUrl) {
+  const file = join('prisma', 'migrations', BASELINE_MIGRATION, 'migration.sql');
+  const result = runPrisma(['db', 'execute', '--file', file], databaseUrl);
+  if (result.status !== 0) {
+    throw new Error(`prisma db execute (baseline) falló:\n${result.output}`);
+  }
+}
+
+/** Registra el baseline como ya aplicado (paso del runbook de producción, aquí sobre gim_test_*). */
+export function markBaselineApplied(databaseUrl) {
+  const result = runPrisma(['migrate', 'resolve', '--applied', BASELINE_MIGRATION], databaseUrl);
+  if (result.status !== 0) {
+    throw new Error(`prisma migrate resolve falló:\n${result.output}`);
+  }
+}
+
+/**
  * Diferencias que `migrate diff` reporta aunque la base y schema.prisma son
  * equivalentes. Se aceptan solo por coincidencia EXACTA de línea.
  *
@@ -143,7 +178,7 @@ export function applyMigrations(databaseUrl) {
  * sobre el enum `configuracion_sri_ambiente` (pruebas = "1"). La columna queda con
  * DEFAULT '1' tanto en la base migrada como en ec_gym_system, pero Prisma la
  * introspecta como `Enum("1")`. Corregirlo exige tocar el modelo SRI
- * (`@default(pruebas)`), decisión diferida a SAAS-03 (docs/SAAS-02-FUNDACIONES.md).
+ * (`@default(pruebas)`); SAAS-03 tampoco lo cambia (docs/SAAS-03-MULTI-TENANT-DB.md).
  */
 const KNOWN_EQUIVALENT_DIFFS = new Set([
   '[*] Altered column `sri_ambiente` (default changed from `Some(Value(Enum("1")))` to `Some(DbGenerated(Some("1")))`)',
@@ -221,6 +256,14 @@ export async function inspectDatabase(serverUrl, name, { countRows = false } = {
       )
     ).map((row) => `${row.tableName}.${row.indexName}`);
 
+    const triggers = (
+      await conn.query(
+        `SELECT TRIGGER_NAME AS name FROM information_schema.TRIGGERS
+         WHERE TRIGGER_SCHEMA = ? ORDER BY TRIGGER_NAME`,
+        [name],
+      )
+    ).map((row) => row.name);
+
     const rowCounts = {};
     if (countRows) {
       for (const table of tables) {
@@ -231,6 +274,6 @@ export async function inspectDatabase(serverUrl, name, { countRows = false } = {
       }
     }
 
-    return { tables, foreignKeys, uniqueIndexes, rowCounts };
+    return { tables, foreignKeys, uniqueIndexes, triggers, rowCounts };
   });
 }

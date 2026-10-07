@@ -2889,3 +2889,103 @@ Eliminar los archivos creados y revertir los scripts de `package.json`, la líne
 
 ### Próximo paso
 Aprobación de SAAS-02 y decisión D1 de SAAS-01 antes de SAAS-03.
+
+---
+
+## 2026-10-06 — SAAS-03: Fundación multi-tenant de la base de datos
+
+### Cambio realizado
+Migración `0002_multi_tenant_foundation`. Añade las tablas `tenants` y `tenant_memberships`, `tenant_id NOT NULL` en 21 tablas de negocio, FK directas y compuestas `(parent_id, tenant_id)`, unicidades por tenant (`dni`, comprobantes, series, configuración) y 25 triggers de compatibilidad y validación. Incluye un backfill fail-fast con tenant inicial `iron-gym` y memberships para el staff. Detalle: `docs/SAAS-03-MULTI-TENANT-DB.md`. **No aplicada en `ec_gym_system`.**
+
+### Archivos creados
+- `backend-nest/prisma/migrations/0002_multi_tenant_foundation/migration.sql`
+- `backend-nest/scripts/lib/tenant-scope.mjs`
+- `backend-nest/scripts/lib/legacy-fixtures.mjs`
+- `backend-nest/scripts/tenant-migration-rehearsal.mjs`
+- `backend-nest/test/integration/tenant-foundation.int-spec.ts`
+- `docs/SAAS-03-MULTI-TENANT-DB.md`
+- `docs/SAAS-03-PRODUCTION-MIGRATION-RUNBOOK.md`
+
+### Archivos modificados
+- `backend-nest/prisma/schema.prisma`
+- `backend-nest/scripts/lib/disposable-database.mjs`: guarda `assertDisposableUrl` en todo `runPrisma`, rechazo de nombres `ec_gym_system`/`prod`, `applyBaselineSqlOnly`, `markBaselineApplied`, triggers en `inspectDatabase`.
+- `backend-nest/scripts/validate-migrations.mjs`: expectativas multi-tenant.
+- `backend-nest/scripts/db-backup-rehearsal.mjs`: usa los fixtures compartidos y compara triggers.
+- `backend-nest/test/integration/database-baseline.int-spec.ts`
+- `backend-nest/src/members/members.service.ts`, `backend-nest/src/attendance/attendance.service.ts`: solo `findUnique({ dni })` → `findFirst`, obligatorio para compilar.
+- `backend-nest/package.json`: script `db:tenant:rehearsal`.
+- `.github/workflows/backend-ci.yml`: paso del ensayo multi-tenant.
+- `backend-nest/README.md`, `docs/06-checklist-pruebas.md`, `docs/10-decisiones-tecnicas.md`, `docs/11-riesgos-y-rollback.md`.
+
+### Funcionalidad afectada
+Ninguna funcionalidad de negocio cambia. Login, JWT, guards, `AuthService`, consultas `findFirst()`, SRI, Flutter, IA y WebSockets siguen sin cambios. Con un solo tenant los inserts actuales funcionan igual, porque los triggers resuelven el tenant.
+
+### Código reutilizado
+Librería `disposable-database.mjs`, `backupDatabase`/`restoreDatabase` de SAAS-02, harness de integración y `checkSchemaDrift` con su allowlist exacta.
+
+### Duplicados revisados
+Los fixtures de ensayo se movieron a `legacy-fixtures.mjs`, compartidos por el ensayo de backup y el de la migración. El inventario de alcance tenant vive solo en `tenant-scope.mjs`. No hay documentos duplicados.
+
+### Optimizaciones realizadas
+Índices compuestos tenant + columna de filtro habitual. Se conservan los nombres originales de FK e índices para reducir el impacto.
+
+### Comentarios agregados en el código
+Cabecera de la migración (etapas y DDL no transaccional), semántica `NULL/0` de los triggers, modo legado fail-closed, guardas de bases desechables y regla temporal del `dni` en los servicios.
+
+### Pruebas realizadas
+- `db:validate-migrations`: OK (25 tablas, 44 FK, 16 únicos, 25 triggers, 0 tenants en una base nueva).
+- `db:tenant:rehearsal`: PASS con fixtures y con escenario negativo fail-fast.
+- `db:tenant:rehearsal --from-backup`: PASS sobre una copia restaurada de la base real (588 filas, 23 memberships, 0 violaciones, deploy ≈ 5,6 s).
+- `db:backup:rehearsal`: PASS (incluye triggers).
+- `test:integration`: 17/17.
+- Unitarios: 6/6.
+- e2e en base desechable: 2/2.
+- `build`: OK.
+- ESLint: solo 1 error y 3 warnings preexistentes.
+- `ec_gym_system`: verificada intacta con una consulta de solo lectura.
+
+### Resultado
+Pendiente de aprobación del usuario. CI en GitHub pendiente, porque requiere push.
+
+### Riesgos detectados
+- La DDL no es transaccional: aplicar en producción solo con el runbook y un backup verificado.
+- No crear un segundo tenant antes de SAAS-04/05.
+- Drift `sri_ambiente` heredado y documentado.
+
+### Rollback
+Local: descartar los archivos de SAAS-03 (ninguna base real fue modificada). Producción: restaurar el backup previo (runbook §8).
+
+### Próximo paso
+Aprobación de SAAS-03, después commit y CI. Luego SAAS-04 (TenantContext y auth multi-tenant).
+
+---
+
+## 2026-10-06 — SAAS-03: Corrección TENANT_ISOLATION (tenant_id inmutable)
+
+### Cambio realizado
+`tenant_id` es inmutable en las 21 tablas tenant. Un `UPDATE` que cambie `tenant_id` se rechaza en la base (`SIGNAL 45000: tenant_id is immutable: <tabla>`). Se fusionó la validación en los 4 triggers UPDATE ya existentes (suscripciones, ventas, movimientos_inventario, sri_log) y se añadieron 17 triggers `BEFORE UPDATE` dedicados. Total: 42 triggers (21 INSERT + 21 UPDATE). Cierra el hueco del padre de relaciones opcionales detectado en el pre-commit audit.
+
+### Archivos modificados
+- `backend-nest/prisma/migrations/0002_multi_tenant_foundation/migration.sql` (sección 9 + fusión en BU existentes)
+- `backend-nest/scripts/lib/tenant-scope.mjs` (`expectedTenantTriggers`)
+- `backend-nest/scripts/validate-migrations.mjs`, `tenant-migration-rehearsal.mjs`
+- `backend-nest/test/integration/tenant-foundation.int-spec.ts` (casos A–F, UPDATE normal, tenant inexistente)
+- `docs/SAAS-03-MULTI-TENANT-DB.md`, `10-decisiones-tecnicas.md`, `11-riesgos-y-rollback.md`, `06-checklist-pruebas.md`
+
+### Funcionalidad afectada
+Ninguna de negocio. Solo impide mover filas entre tenants vía SQL/UPDATE.
+
+### Duplicados revisados
+Un solo trigger UPDATE por tabla; sin duplicar validaciones.
+
+### Resultado
+Pendiente de revalidación completa y aprobación.
+
+### Riesgos detectados
+`findFirst({ dni })` sigue siendo deuda SAAS-04/05 (S03-R5).
+
+### Rollback
+Descartar cambios locales; `ec_gym_system` no fue tocada.
+
+### Próximo paso
+Revalidar ensayos/tests y solicitar READY_FOR_COMMIT.

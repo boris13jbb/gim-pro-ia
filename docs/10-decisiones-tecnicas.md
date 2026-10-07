@@ -172,3 +172,23 @@ dart run flutter_native_splash:create
 
 ### Riesgo / Nota
 El icono y el splash solo se ven tras detener `flutter run` y **reinstalar** la app (no se aplican con hot reload/restart).
+
+## SAAS-03 — Fundación multi-tenant de la base de datos (2026-10-06)
+
+### Decisión
+Base compartida con aislamiento por fila (`tenant_id`). La integridad entre gimnasios se garantiza **en la base**, no solo en el código:
+- FK directas a `tenants`.
+- FK compuestas `(parent_id, tenant_id)` en las relaciones obligatorias.
+- Triggers para las relaciones opcionales y para resolver el tenant del código actual (modo legado con un único tenant; fail-closed con varios).
+- **`tenant_id` es inmutable** tras asignarse: un `UPDATE` que cambie `tenant_id` se rechaza en las 21 tablas tenant (corrige el hallazgo TENANT_ISOLATION del pre-commit audit: un padre de relación opcional no puede “mudarse” de gimnasio).
+
+### Detalles
+- `tenant_id Int @default(dbgenerated())`: la columna es NOT NULL sin default en la base y opcional en los `create` de Prisma, así que el código actual no se modifica.
+- Unicidades por tenant: `socios.dni`, comprobantes, series SRI y `configuracion`. Siguen globales `usuarios.email` y `auth_refresh_tokens.jti`. `usuarios.email` permanece global porque `usuarios` representa identidad de autenticación global y un usuario puede pertenecer a múltiples tenants mediante `tenant_memberships` (diseño SAAS-01, no D1; D1 solo define el login del socio con slug + DNI/email + password).
+- Modelos `tenants`/`tenant_memberships` en minúsculas por coherencia con el esquema.
+- No se infiere `owner` en el backfill; el tenant inicial es `iron-gym`, resuelto por slug y nunca por `id = 1`.
+- Drift `sri_ambiente` sin corregir (fuera de alcance).
+- 42 triggers: 21 `BEFORE INSERT` (resolución/validación) + 21 `BEFORE UPDATE` (inmutabilidad; en las 4 tablas con padres opcionales la misma validación vive en un solo trigger UPDATE).
+
+### Referencias
+`docs/SAAS-03-MULTI-TENANT-DB.md`, `docs/SAAS-03-PRODUCTION-MIGRATION-RUNBOOK.md`.

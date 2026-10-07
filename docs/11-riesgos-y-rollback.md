@@ -94,3 +94,15 @@ Cada fase es reversible sin afectar al legacy PHP. Detalle en cada `docs/fases/f
 - No se elimina PHP legacy hasta período de operación en paralelo validado.
 - Antes de producción: secretos JWT únicos, `NODE_ENV=production` (bloquea secretos inseguros), HTTPS, backups programados y `SWAGGER_ENABLED=false` si aplica.
 - Rollback global: mantener PHP operativo y desactivar la API NestJS; la BD `ec_gym_system` no sufre cambios destructivos por la migración.
+
+## SAAS-03 — Migración multi-tenant (0002)
+
+| ID | Riesgo | Mitigación | Estado |
+|----|--------|------------|--------|
+| S03-R1 | DDL no transaccional: un fallo deja la base parcial | Backup verificado (SHA-256) + preflight + ensayo `--from-backup`; recuperación = restore (runbook §8) | Mitigado (procedimiento) |
+| S03-R2 | Segundo tenant antes de filtrar consultas expone datos entre gimnasios | No crear tenants adicionales hasta SAAS-04/05; las raíces sin `tenant_id` fallan con 2+ tenants | Abierto (control operativo) |
+| S03-R3 | Datos ambiguos (varias `configuracion`, duplicados) | Guard `_saas03_guard` aborta la migración; preflight reporta `BLOCKED_BY_DATA_INTEGRITY` sin PII | Mitigado |
+| S03-R4 | Triggers invisibles para Prisma | Documentados; backup con `--triggers`; `validate-migrations` y el ensayo esperan 42 | Mitigado |
+| S03-R5 | `findFirst({ dni })` sin filtro tenant (login/asistencia) | Con un solo tenant es idéntico al legacy. Con 2+ tenants puede devolver el socio del gimnasio equivocado. **No corregido en SAAS-03** (pertenece a TenantContext SAAS-04/05). Mitigado por S03-R2 | Abierto (FUTURE_PHASE) |
+
+Rollback: antes de producción, descartar los archivos locales. En producción, restaurar el backup previo; la down-migration manual solo tras ensayo en `gim_test_*`.

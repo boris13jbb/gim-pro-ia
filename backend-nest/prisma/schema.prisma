@@ -6,14 +6,104 @@ datasource db {
   provider = "mysql"
 }
 
+// Multi-tenancy (SAAS-03):
+// Las tablas de negocio llevan `tenant_id` NOT NULL con FK a `tenants`. Las tablas hijas
+// referencian a su padre con FK compuesta (padre_id, tenant_id) -> (id, tenant_id), de modo
+// que la propia BD rechaza referencias cross-tenant.
+// `tenant_id` se declara `@default(dbgenerated())` porque lo resuelve la BD: los triggers
+// `trg_*_tenant_bi` lo heredan del padre o, en modo legado (exactamente un tenant), lo asignan
+// al único tenant. Así el código actual (single-gym) sigue funcionando hasta SAAS-04/05.
+// Ver docs/SAAS-03-MULTI-TENANT-DB.md.
+
+/// Gimnasio (tenant) de la plataforma. `id` es interno (FK); `public_id` (ULID) es el identificador externo.
+model tenants {
+  id         Int            @id @default(autoincrement())
+  public_id  String         @unique(map: "uq_tenants_public_id") @db.Char(26)
+  slug       String         @unique(map: "uq_tenants_slug") @db.VarChar(63)
+  name       String         @db.VarChar(150)
+  status     tenants_status @default(active)
+  /// Preparación para entitlements futuros; no hay billing en SAAS-03.
+  plan_code  String?        @db.VarChar(40)
+  timezone   String         @default("America/Guayaquil") @db.VarChar(64)
+  country    String         @default("EC") @db.Char(2)
+  metadata   Json?
+  created_at DateTime       @default(now()) @db.DateTime(0)
+  updated_at DateTime       @default(now()) @updatedAt @db.DateTime(0)
+
+  tenant_memberships        tenant_memberships[]
+  asistencias               asistencias[]
+  cajas                     cajas[]
+  categorias                categorias[]
+  comprobantes_detalle      comprobantes_detalle[]
+  comprobantes_electronicos comprobantes_electronicos[]
+  configuracion             configuracion?
+  detalle_ventas            detalle_ventas[]
+  gastos                    gastos[]
+  medidas                   medidas[]
+  planes                    planes[]
+  productos                 productos[]
+  movimientos_inventario    movimientos_inventario[]
+  rutinas                   rutinas[]
+  socios                    socios[]
+  sri_log                   sri_log[]
+  sri_series                sri_series[]
+  suscripciones             suscripciones[]
+  ventas                    ventas[]
+  ai_conversations          ai_conversations[]
+  ai_messages               ai_messages[]
+  notifications             notifications[]
+
+  @@index([status], map: "idx_tenants_status")
+}
+
+enum tenants_status {
+  active
+  suspended
+  cancelled
+}
+
+/// Relación staff (usuarios) ↔ gimnasio. Un usuario puede pertenecer a varios tenants.
+/// SAAS-03 solo crea la estructura y el backfill; login/JWT/guards no la usan todavía (SAAS-04).
+model tenant_memberships {
+  id         Int                      @id @default(autoincrement())
+  tenant_id  Int
+  user_id    Int
+  role       tenant_membership_role
+  status     tenant_membership_status @default(active)
+  created_at DateTime                 @default(now()) @db.DateTime(0)
+  updated_at DateTime                 @default(now()) @updatedAt @db.DateTime(0)
+  tenants    tenants                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_tenant_memberships_tenant")
+  usuarios   usuarios                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_tenant_memberships_user")
+
+  @@unique([tenant_id, user_id], map: "uq_tenant_memberships_tenant_user")
+  @@index([user_id, status], map: "idx_tenant_memberships_user_status")
+}
+
+enum tenant_membership_role {
+  owner
+  admin
+  reception
+  trainer
+}
+
+enum tenant_membership_status {
+  active
+  invited
+  suspended
+  removed
+}
+
 model asistencias {
   id              Int                         @id @default(autoincrement())
+  tenant_id       Int                         @default(dbgenerated())
   socio_id        Int
   fecha_hora      DateTime?                   @default(now()) @db.DateTime(0)
   metodo_ingreso  asistencias_metodo_ingreso?
-  socios          socios                      @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "asistencias_ibfk_1")
+  tenants         tenants                     @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_asistencias_tenant")
+  socios          socios                      @relation(fields: [socio_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "asistencias_ibfk_1")
 
-  @@index([socio_id], map: "socio_id")
+  @@index([socio_id, tenant_id], map: "socio_id")
+  @@index([tenant_id, fecha_hora], map: "idx_asistencias_tenant_fecha")
 }
 
 enum asistencias_metodo_ingreso {
@@ -25,6 +115,7 @@ enum asistencias_metodo_ingreso {
 
 model cajas {
   id             Int           @id @default(autoincrement())
+  tenant_id      Int           @default(dbgenerated())
   usuario_id     Int
   monto_inicial  Decimal       @db.Decimal(10, 2)
   monto_final    Decimal?      @default(0.00) @db.Decimal(10, 2)
@@ -34,22 +125,31 @@ model cajas {
   fecha_apertura DateTime?     @default(now()) @db.DateTime(0)
   fecha_cierre   DateTime?     @db.DateTime(0)
   estado         cajas_estado? @default(abierta)
+  tenants        tenants       @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_cajas_tenant")
   usuarios       usuarios      @relation(fields: [usuario_id], references: [id], onUpdate: Restrict, map: "cajas_ibfk_1")
   ventas         ventas[]
 
+  @@unique([id, tenant_id], map: "uq_cajas_id_tenant")
   @@index([usuario_id], map: "usuario_id")
+  @@index([tenant_id, estado], map: "idx_cajas_tenant_estado")
 }
 
 model categorias {
   id        Int                @id @default(autoincrement())
+  tenant_id Int                @default(dbgenerated())
   nombre    String             @db.VarChar(100)
   estado    categorias_estado? @default(activo)
+  tenants   tenants            @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_categorias_tenant")
   productos productos[]
+
+  @@unique([id, tenant_id], map: "uq_categorias_id_tenant")
+  @@index([tenant_id], map: "idx_categorias_tenant")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model comprobantes_detalle {
   id                        Int                       @id @default(autoincrement())
+  tenant_id                 Int                       @default(dbgenerated())
   comprobante_id            Int
   linea                     Int                       @default(1)
   codigo                    String?                   @db.VarChar(50)
@@ -62,14 +162,17 @@ model comprobantes_detalle {
   igv_linea                 Decimal                   @default(0.00) @db.Decimal(12, 2)
   total_linea               Decimal                   @db.Decimal(12, 2)
   tipo_afectacion           String?                   @default("10") @db.VarChar(2)
-  comprobantes_electronicos comprobantes_electronicos @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_comp_detalle")
+  tenants                   tenants                   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_comprobantes_detalle_tenant")
+  comprobantes_electronicos comprobantes_electronicos @relation(fields: [comprobante_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_comp_detalle")
 
-  @@index([comprobante_id], map: "idx_comp")
+  @@index([comprobante_id, tenant_id], map: "idx_comp")
+  @@index([tenant_id], map: "idx_comprobantes_detalle_tenant")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model comprobantes_electronicos {
   id                    Int                                     @id @default(autoincrement())
+  tenant_id             Int                                     @default(dbgenerated())
   origen_tipo           comprobantes_electronicos_origen_tipo
   origen_id             Int?
   tipo_doc              String                                  @db.VarChar(2)
@@ -114,17 +217,22 @@ model comprobantes_electronicos {
   usuario_id            Int?
   creado_en             DateTime?                               @default(now()) @db.DateTime(0)
   actualizado_en        DateTime?                               @default(now()) @db.DateTime(0)
+  tenants               tenants                                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_comprobantes_electronicos_tenant")
   comprobantes_detalle  comprobantes_detalle[]
 
-  @@unique([tipo_doc, serie, correlativo], map: "unq_comprobante")
+  // Numeración fiscal por emisor: cada gimnasio tiene su propio RUC/serie/secuencial.
+  @@unique([tenant_id, tipo_doc, serie, correlativo], map: "unq_comprobante")
+  @@unique([id, tenant_id], map: "uq_comprobantes_id_tenant")
   @@index([estado_sunat], map: "idx_estado")
   @@index([fecha_emision], map: "idx_fecha")
   @@index([origen_tipo, origen_id], map: "idx_origen")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// Configuración comercial/fiscal: una fila por tenant (antes singleton).
 model configuracion {
-  id                    Int                           @id
+  id                    Int                           @id @default(autoincrement())
+  tenant_id             Int                           @unique(map: "uq_configuracion_tenant") @default(dbgenerated())
   nombre_sistema        String?                       @db.VarChar(100)
   ruc                   String?                       @db.VarChar(20)
   razon_social          String?                       @db.VarChar(255)
@@ -154,95 +262,119 @@ model configuracion {
   sri_certificado_clave String?                       @db.VarChar(255)
   iva_tasa              Decimal?                      @default(15.00) @db.Decimal(5, 2)
   incluye_iva           Boolean?                      @default(true)
+  tenants               tenants                       @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_configuracion_tenant")
 }
 
 model detalle_ventas {
   id              Int       @id @default(autoincrement())
+  tenant_id       Int       @default(dbgenerated())
   venta_id        Int
   producto_id     Int
   cantidad        Int
   precio_unitario Decimal   @db.Decimal(10, 2)
   subtotal        Decimal   @db.Decimal(10, 2)
-  ventas          ventas    @relation(fields: [venta_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detalle_ventas_ibfk_1")
-  productos       productos @relation(fields: [producto_id], references: [id], onUpdate: Restrict, map: "detalle_ventas_ibfk_2")
+  tenants         tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_detalle_ventas_tenant")
+  ventas          ventas    @relation(fields: [venta_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "detalle_ventas_ibfk_1")
+  productos       productos @relation(fields: [producto_id, tenant_id], references: [id, tenant_id], onUpdate: Restrict, map: "detalle_ventas_ibfk_2")
 
-  @@index([producto_id], map: "producto_id")
-  @@index([venta_id], map: "venta_id")
+  @@index([producto_id, tenant_id], map: "producto_id")
+  @@index([venta_id, tenant_id], map: "venta_id")
+  @@index([tenant_id], map: "idx_detalle_ventas_tenant")
 }
 
 model gastos {
   id               Int            @id @default(autoincrement())
+  tenant_id        Int            @default(dbgenerated())
   descripcion      String         @db.VarChar(255)
   monto            Decimal        @db.Decimal(10, 2)
   fecha            DateTime       @db.Date
   estado           gastos_estado? @default(creado)
   motivo_anulacion String?        @db.VarChar(255)
+  tenants          tenants        @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_gastos_tenant")
+
+  @@index([tenant_id, fecha], map: "idx_gastos_tenant_fecha")
 }
 
 model medidas {
-  id       Int       @id @default(autoincrement())
-  socio_id Int
-  peso     Decimal?  @db.Decimal(5, 2)
-  grasa    Decimal?  @db.Decimal(5, 2)
-  cintura  Decimal?  @db.Decimal(5, 2)
-  brazo    Decimal?  @db.Decimal(5, 2)
-  fecha    DateTime? @db.Date
-  socios   socios    @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "medidas_ibfk_1")
+  id        Int       @id @default(autoincrement())
+  tenant_id Int       @default(dbgenerated())
+  socio_id  Int
+  peso      Decimal?  @db.Decimal(5, 2)
+  grasa     Decimal?  @db.Decimal(5, 2)
+  cintura   Decimal?  @db.Decimal(5, 2)
+  brazo     Decimal?  @db.Decimal(5, 2)
+  fecha     DateTime? @db.Date
+  tenants   tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_medidas_tenant")
+  socios    socios    @relation(fields: [socio_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "medidas_ibfk_1")
 
-  @@index([socio_id], map: "socio_id")
+  @@index([socio_id, tenant_id], map: "socio_id")
+  @@index([tenant_id], map: "idx_medidas_tenant")
 }
 
 model planes {
   id            Int             @id @default(autoincrement())
+  tenant_id     Int             @default(dbgenerated())
   nombre        String          @db.VarChar(50)
   precio        Decimal         @db.Decimal(10, 2)
   duracion_dias Int
   descripcion   String?         @db.Text
   estado        planes_estado?  @default(activo)
+  tenants       tenants         @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_planes_tenant")
   suscripciones suscripciones[]
+
+  @@index([tenant_id], map: "idx_planes_tenant")
 }
 
 model productos {
-  id             Int               @id @default(autoincrement())
-  categoria_id   Int
-  codigo         String?           @db.VarChar(50)
-  nombre         String            @db.VarChar(150)
-  precio_compra  Decimal           @db.Decimal(10, 2)
-  precio_venta   Decimal           @db.Decimal(10, 2)
-  stock          Int?              @default(0)
-  foto           String?           @db.VarChar(255)
-  estado         productos_estado? @default(activo)
-  detalle_ventas detalle_ventas[]
-  categorias     categorias        @relation(fields: [categoria_id], references: [id], onUpdate: Restrict, map: "productos_ibfk_1")
+  id                     Int                      @id @default(autoincrement())
+  tenant_id              Int                      @default(dbgenerated())
+  categoria_id           Int
+  codigo                 String?                  @db.VarChar(50)
+  nombre                 String                   @db.VarChar(150)
+  precio_compra          Decimal                  @db.Decimal(10, 2)
+  precio_venta           Decimal                  @db.Decimal(10, 2)
+  stock                  Int?                     @default(0)
+  foto                   String?                  @db.VarChar(255)
+  estado                 productos_estado?        @default(activo)
+  detalle_ventas         detalle_ventas[]
+  tenants                tenants                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_productos_tenant")
+  categorias             categorias               @relation(fields: [categoria_id, tenant_id], references: [id, tenant_id], onUpdate: Restrict, map: "productos_ibfk_1")
   movimientos_inventario movimientos_inventario[]
 
-  @@index([categoria_id], map: "categoria_id")
+  @@unique([id, tenant_id], map: "uq_productos_id_tenant")
+  @@index([categoria_id, tenant_id], map: "categoria_id")
+  @@index([tenant_id], map: "idx_productos_tenant")
 }
 
 /// Auditoría de entradas/salidas de stock (NestJS Fase 06 ampliada)
 model movimientos_inventario {
-  id             Int                          @id @default(autoincrement())
+  id             Int                         @id @default(autoincrement())
+  tenant_id      Int                         @default(dbgenerated())
   producto_id    Int
   tipo           movimientos_inventario_tipo
   cantidad       Int
   stock_anterior Int
   stock_nuevo    Int
+  /// Relación opcional: la coherencia de tenant con `ventas` la valida el trigger (Prisma no admite FK compuesta opcional).
   venta_id       Int?
   usuario_id     Int?
-  notas          String?                      @db.VarChar(255)
-  created_at     DateTime                     @default(now()) @db.DateTime(0)
-  productos      productos                    @relation(fields: [producto_id], references: [id], onUpdate: Restrict, map: "movimientos_inventario_ibfk_1")
-  ventas         ventas?                      @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_2")
-  usuarios       usuarios?                    @relation(fields: [usuario_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_3")
+  notas          String?                     @db.VarChar(255)
+  created_at     DateTime                    @default(now()) @db.DateTime(0)
+  tenants        tenants                     @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_movimientos_inventario_tenant")
+  productos      productos                   @relation(fields: [producto_id, tenant_id], references: [id, tenant_id], onUpdate: Restrict, map: "movimientos_inventario_ibfk_1")
+  ventas         ventas?                     @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_2")
+  usuarios       usuarios?                   @relation(fields: [usuario_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "movimientos_inventario_ibfk_3")
 
-  @@index([producto_id], map: "idx_mov_inv_producto")
+  @@index([producto_id, tenant_id], map: "idx_mov_inv_producto")
   @@index([venta_id], map: "idx_mov_inv_venta")
   @@index([usuario_id], map: "idx_mov_inv_usuario")
   @@index([created_at], map: "idx_mov_inv_created")
+  @@index([tenant_id, created_at], map: "idx_mov_inv_tenant_created")
 }
 
 model rutinas {
   id               Int       @id @default(autoincrement())
+  tenant_id        Int       @default(dbgenerated())
   socio_id         Int
   dia1             String?   @db.Text
   dia2             String?   @db.Text
@@ -252,25 +384,30 @@ model rutinas {
   dia6             String?   @db.Text
   observaciones    String?   @db.Text
   fecha_asignacion DateTime? @default(now()) @db.DateTime(0)
-  socios           socios    @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "rutinas_ibfk_1")
+  tenants          tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_rutinas_tenant")
+  socios           socios    @relation(fields: [socio_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "rutinas_ibfk_1")
 
-  @@index([socio_id], map: "socio_id")
+  @@index([socio_id, tenant_id], map: "socio_id")
+  @@index([tenant_id], map: "idx_rutinas_tenant")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// Socio de UN gimnasio: la misma persona en dos gimnasios son dos filas independientes.
 model socios {
-  id               Int             @id @default(autoincrement())
-  nombre           String          @db.VarChar(100)
-  dni              String          @unique(map: "dni") @db.VarChar(20)
-  tipo_doc         String?         @default("1") @db.VarChar(1)
-  direccion_fiscal String?         @db.VarChar(255)
-  email            String?         @db.VarChar(100)
-  telefono         String?         @db.VarChar(20)
-  whatsapp_api_key String?         @db.VarChar(50)
-  fecha_registro   DateTime?       @default(now()) @db.DateTime(0)
-  estado           socios_estado?  @default(activo)
-  foto             String?         @db.VarChar(255)
-  password         String?         @db.VarChar(255)
+  id               Int                   @id @default(autoincrement())
+  tenant_id        Int                   @default(dbgenerated())
+  nombre           String                @db.VarChar(100)
+  dni              String                @db.VarChar(20)
+  tipo_doc         String?               @default("1") @db.VarChar(1)
+  direccion_fiscal String?               @db.VarChar(255)
+  email            String?               @db.VarChar(100)
+  telefono         String?               @db.VarChar(20)
+  whatsapp_api_key String?               @db.VarChar(50)
+  fecha_registro   DateTime?             @default(now()) @db.DateTime(0)
+  estado           socios_estado?        @default(activo)
+  foto             String?               @db.VarChar(255)
+  password         String?               @db.VarChar(255)
+  tenants          tenants               @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_socios_tenant")
   asistencias      asistencias[]
   medidas          medidas[]
   rutinas          rutinas[]
@@ -279,11 +416,17 @@ model socios {
   refreshTokens    auth_refresh_tokens[]
   ai_conversations ai_conversations[]
   notifications    notifications[]
+
+  // El DNI identifica al socio dentro de su gimnasio, no en toda la plataforma.
+  @@unique([tenant_id, dni], map: "uq_socios_tenant_dni")
+  @@unique([id, tenant_id], map: "uq_socios_id_tenant")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model sri_log {
   id             Int       @id @default(autoincrement())
+  tenant_id      Int       @default(dbgenerated())
+  /// Sin FK (legacy). El trigger hereda/valida el tenant del comprobante cuando existe.
   comprobante_id Int?
   accion         String    @db.VarChar(40)
   request_xml    String?   @db.MediumText
@@ -291,25 +434,31 @@ model sri_log {
   codigo         String?   @db.VarChar(10)
   mensaje        String?   @db.Text
   creado_en      DateTime? @default(now()) @db.DateTime(0)
+  tenants        tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_sri_log_tenant")
 
   @@index([accion], map: "idx_accion")
   @@index([comprobante_id], map: "idx_comp_log")
+  @@index([tenant_id], map: "idx_sri_log_tenant")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model sri_series {
   id          Int                @id @default(autoincrement())
+  tenant_id   Int                @default(dbgenerated())
   tipo_doc    String             @db.VarChar(2)
   serie       String             @db.VarChar(6)
   correlativo Int                @default(0)
   descripcion String?            @db.VarChar(120)
   estado      sri_series_estado? @default(activo)
+  tenants     tenants            @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_sri_series_tenant")
 
-  @@unique([tipo_doc, serie], map: "unq_tipo_serie")
+  @@unique([tenant_id, tipo_doc, serie], map: "unq_tipo_serie")
 }
 
 model suscripciones {
   id               Int                             @id @default(autoincrement())
+  tenant_id        Int                             @default(dbgenerated())
+  /// Relaciones opcionales: la coherencia de tenant con socio/plan la valida el trigger.
   socio_id         Int?
   plan_id          Int?
   fecha_inicio     DateTime?                       @db.Date
@@ -317,25 +466,30 @@ model suscripciones {
   estado           suscripciones_estado?           @default(activa)
   tipo_comprobante suscripciones_tipo_comprobante? @default(boleta)
   comprobante_id   Int?
+  tenants          tenants                         @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_suscripciones_tenant")
   socios           socios?                         @relation(fields: [socio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "suscripciones_ibfk_1")
   planes           planes?                         @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "suscripciones_ibfk_2")
 
   @@index([plan_id], map: "plan_id")
   @@index([socio_id], map: "socio_id")
+  @@index([tenant_id, fecha_fin], map: "idx_suscripciones_tenant_fin")
 }
 
+/// Identidad staff GLOBAL de la plataforma (email único global). El acceso a cada gimnasio se da por `tenant_memberships`.
 model usuarios {
-  id            Int                   @id @default(autoincrement())
-  nombre        String?               @db.VarChar(100)
-  email         String?               @unique(map: "email") @db.VarChar(100)
-  password      String?               @db.VarChar(255)
-  rol           usuarios_rol?         @default(recepcionista)
-  estado        usuarios_estado?      @default(activo)
-  cajas         cajas[]
-  refreshTokens auth_refresh_tokens[]
+  id                     Int                      @id @default(autoincrement())
+  nombre                 String?                  @db.VarChar(100)
+  email                  String?                  @unique(map: "email") @db.VarChar(100)
+  password               String?                  @db.VarChar(255)
+  rol                    usuarios_rol?            @default(recepcionista)
+  estado                 usuarios_estado?         @default(activo)
+  cajas                  cajas[]
+  refreshTokens          auth_refresh_tokens[]
   movimientos_inventario movimientos_inventario[]
+  tenant_memberships     tenant_memberships[]
 }
 
+/// Sesiones (refresh tokens) de staff o socio. GLOBAL en SAAS-03: el tenant se deriva del socio/membership; SAAS-04 decide si se añade `tenant_id`.
 model auth_refresh_tokens {
   id           Int       @id @default(autoincrement())
   userId       Int?
@@ -361,26 +515,31 @@ model auth_refresh_tokens {
 }
 
 model ventas {
-  id                Int                      @id @default(autoincrement())
-  caja_id           Int
-  socio_id          Int?
-  total             Decimal                  @db.Decimal(10, 2)
-  descuento         Decimal                  @default(0.00) @db.Decimal(10, 2)
-  metodo_pago       ventas_metodo_pago?      @default(efectivo)
-  tipo_comprobante  ventas_tipo_comprobante? @default(boleta)
-  cliente_tipo_doc  String?                  @db.VarChar(1)
-  fecha             DateTime?                @default(now()) @db.DateTime(0)
-  cliente_num_doc   String?                  @db.VarChar(20)
-  cliente_razon     String?                  @db.VarChar(255)
-  cliente_direccion String?                  @db.VarChar(255)
-  comprobante_id    Int?
-  detalle_ventas    detalle_ventas[]
+  id                     Int                      @id @default(autoincrement())
+  tenant_id              Int                      @default(dbgenerated())
+  caja_id                Int
+  /// Relación opcional: la coherencia de tenant con `socios` la valida el trigger.
+  socio_id               Int?
+  total                  Decimal                  @db.Decimal(10, 2)
+  descuento              Decimal                  @default(0.00) @db.Decimal(10, 2)
+  metodo_pago            ventas_metodo_pago?      @default(efectivo)
+  tipo_comprobante       ventas_tipo_comprobante? @default(boleta)
+  cliente_tipo_doc       String?                  @db.VarChar(1)
+  fecha                  DateTime?                @default(now()) @db.DateTime(0)
+  cliente_num_doc        String?                  @db.VarChar(20)
+  cliente_razon          String?                  @db.VarChar(255)
+  cliente_direccion      String?                  @db.VarChar(255)
+  comprobante_id         Int?
+  detalle_ventas         detalle_ventas[]
   movimientos_inventario movimientos_inventario[]
-  cajas             cajas                    @relation(fields: [caja_id], references: [id], onUpdate: Restrict, map: "ventas_ibfk_1")
-  socios            socios?                  @relation(fields: [socio_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "ventas_ibfk_2")
+  tenants                tenants                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_ventas_tenant")
+  cajas                  cajas                    @relation(fields: [caja_id, tenant_id], references: [id, tenant_id], onUpdate: Restrict, map: "ventas_ibfk_1")
+  socios                 socios?                  @relation(fields: [socio_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "ventas_ibfk_2")
 
-  @@index([caja_id], map: "caja_id")
+  @@unique([id, tenant_id], map: "uq_ventas_id_tenant")
+  @@index([caja_id, tenant_id], map: "caja_id")
   @@index([socio_id], map: "socio_id")
+  @@index([tenant_id, fecha], map: "idx_ventas_tenant_fecha")
 }
 
 enum comprobantes_electronicos_origen_tipo {
@@ -504,17 +663,21 @@ enum comprobantes_electronicos_estado_sunat {
 
 /// Conversaciones del asistente IA por socio (Fase 11).
 model ai_conversations {
-  id             Int                     @id @default(autoincrement())
+  id             Int                    @id @default(autoincrement())
+  tenant_id      Int                    @default(dbgenerated())
   member_id      Int
-  titulo         String?                 @db.VarChar(120)
-  status         ai_conversation_status  @default(active)
-  creado_en      DateTime                @default(now()) @db.DateTime(0)
-  actualizado_en DateTime                @updatedAt @db.DateTime(0)
-  socios         socios                  @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_conv_socio")
+  titulo         String?                @db.VarChar(120)
+  status         ai_conversation_status @default(active)
+  creado_en      DateTime               @default(now()) @db.DateTime(0)
+  actualizado_en DateTime               @updatedAt @db.DateTime(0)
+  tenants        tenants                @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_ai_conversations_tenant")
+  socios         socios                 @relation(fields: [member_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_conv_socio")
   ai_messages    ai_messages[]
 
-  @@index([member_id], map: "idx_ai_conv_member")
+  @@unique([id, tenant_id], map: "uq_ai_conversations_id_tenant")
+  @@index([member_id, tenant_id], map: "idx_ai_conv_member")
   @@index([member_id, status], map: "idx_ai_conv_member_status")
+  @@index([tenant_id], map: "idx_ai_conversations_tenant")
 }
 
 enum ai_conversation_status {
@@ -524,14 +687,17 @@ enum ai_conversation_status {
 
 model ai_messages {
   id               Int              @id @default(autoincrement())
+  tenant_id        Int              @default(dbgenerated())
   conversation_id  Int
   role             ai_message_role
   content          String           @db.Text
   metadata         Json?
   creado_en        DateTime         @default(now()) @db.DateTime(0)
-  ai_conversations ai_conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_msg_conv")
+  tenants          tenants          @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_ai_messages_tenant")
+  ai_conversations ai_conversations @relation(fields: [conversation_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ai_msg_conv")
 
-  @@index([conversation_id], map: "idx_ai_msg_conv")
+  @@index([conversation_id, tenant_id], map: "idx_ai_msg_conv")
+  @@index([tenant_id], map: "idx_ai_messages_tenant")
 }
 
 enum ai_message_role {
@@ -543,6 +709,7 @@ enum ai_message_role {
 /// Notificaciones persistidas del socio (Fase 16). Complementan WebSocket `/events`.
 model notifications {
   id         Int       @id @default(autoincrement())
+  tenant_id  Int       @default(dbgenerated())
   member_id  Int
   type       String    @db.VarChar(60)
   title      String    @db.VarChar(160)
@@ -551,8 +718,11 @@ model notifications {
   read_at    DateTime? @db.DateTime(0)
   created_at DateTime  @default(now()) @db.DateTime(0)
   updated_at DateTime  @updatedAt @db.DateTime(0)
-  socios     socios    @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_notifications_member")
+  tenants    tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_notifications_tenant")
+  socios     socios    @relation(fields: [member_id, tenant_id], references: [id, tenant_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_notifications_member")
 
   @@index([member_id, created_at], map: "idx_notifications_member_created")
   @@index([member_id, read_at], map: "idx_notifications_member_read")
+  @@index([member_id, tenant_id], map: "idx_notifications_member_tenant")
+  @@index([tenant_id], map: "idx_notifications_tenant")
 }

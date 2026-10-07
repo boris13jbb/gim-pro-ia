@@ -5,13 +5,15 @@ import { PrismaHealthIndicator } from '../../src/database/prisma.health';
 import { PrismaService } from '../../src/database/prisma.service';
 
 /**
- * SAAS-02 — Prueba de migración desde cero.
+ * SAAS-02/03 — Prueba de migración desde cero.
  * global-setup.mjs ya creó una base gim_test_* vacía y aplicó las migraciones;
  * aquí se verifica que la aplicación (DatabaseModule real) opera sobre ella.
+ * La base nueva no tiene tenants: el spec crea el suyo y lo pasa explícito.
  */
 describe('Baseline de base de datos (integración MySQL)', () => {
   let moduleRef: TestingModule;
   let prisma: PrismaService;
+  let tenantId: number;
   const databaseName = process.env.INTEGRATION_DATABASE_NAME ?? '';
 
   beforeAll(async () => {
@@ -28,6 +30,14 @@ describe('Baseline de base de datos (integración MySQL)', () => {
     }).compile();
     await moduleRef.init();
     prisma = moduleRef.get(PrismaService);
+    const tenant = await prisma.tenants.create({
+      data: {
+        public_id: String(Date.now()).padStart(26, '0'),
+        slug: `baseline-${Date.now()}`,
+        name: 'Gym baseline',
+      },
+    });
+    tenantId = tenant.id;
   });
 
   afterAll(async () => {
@@ -48,19 +58,20 @@ describe('Baseline de base de datos (integración MySQL)', () => {
     expect(result.database.status).toBe('up');
   });
 
-  it('el historial de Prisma contiene solo el baseline, aplicado completo', async () => {
+  it('el historial de Prisma contiene baseline + multi-tenant, aplicados completos', async () => {
     const rows = await prisma.$queryRaw<
       { migration_name: string; finished_at: Date | null }[]
-    >`SELECT migration_name, finished_at FROM _prisma_migrations`;
+    >`SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY migration_name`;
     expect(rows.map((row) => row.migration_name)).toEqual([
       '0001_baseline_current_schema',
+      '0002_multi_tenant_foundation',
     ]);
-    expect(rows[0].finished_at).not.toBeNull();
+    expect(rows.every((row) => row.finished_at !== null)).toBe(true);
   });
 
   it('los modelos Prisma operan y las foreign keys se aplican', async () => {
     const category = await prisma.categorias.create({
-      data: { nombre: 'Categoría integración' },
+      data: { tenant_id: tenantId, nombre: 'Categoría integración' },
     });
     const product = await prisma.productos.create({
       data: {
@@ -84,13 +95,21 @@ describe('Baseline de base de datos (integración MySQL)', () => {
     ).rejects.toThrow();
   });
 
-  it('las unicidades actuales siguen siendo globales (socios.dni)', async () => {
+  it('socios.dni es único dentro del tenant', async () => {
     await prisma.socios.create({
-      data: { nombre: 'Socio integración', dni: 'INT-0001' },
+      data: {
+        tenant_id: tenantId,
+        nombre: 'Socio integración',
+        dni: 'INT-0001',
+      },
     });
     await expect(
       prisma.socios.create({
-        data: { nombre: 'Socio duplicado', dni: 'INT-0001' },
+        data: {
+          tenant_id: tenantId,
+          nombre: 'Socio duplicado',
+          dni: 'INT-0001',
+        },
       }),
     ).rejects.toThrow();
   });
